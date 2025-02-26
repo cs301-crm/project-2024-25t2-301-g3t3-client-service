@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package com.cs301.client_service.protobufs;
+
+option java_multiple_files = true;
+option java_package = "com.cs301.client_service.proto";
+
+enum AccountStatusProto {
+  ACCOUNT_STATUS_UNSPECIFIED = 0;
+  ACTIVE = 1;
+  INACTIVE = 2;
+  PENDING = 3;
+  CLOSED = 4;
+}

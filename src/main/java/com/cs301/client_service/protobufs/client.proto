@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package com.cs301.client_service.protobufs;
+
+import "gender.proto";
+import "account.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "com.cs301.client_service.protobufs";
+
+message ClientProto {
+  string client_id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  google.protobuf.Timestamp date_of_birth = 4;
+  GenderProto gender = 5;
+  string email_address = 6;
+  string phone_number = 7;
+  string address = 8;
+  string city = 9;
+  string state = 10;
+  string country = 11;
+  string postal_code = 12;
+  string nric = 13;
+  repeated AccountProto accounts = 14;
+}
