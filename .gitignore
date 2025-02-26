@@ -29,8 +29,9 @@ build/
 .gradle
 !**/src/main/**/build/
 !**/src/test/**/build/
-.target
-.bin
+bin
+target
+
 ### VS Code ###
 .vscode/
 
