@@ -36,6 +36,3 @@ jobs:
 
       - name: Build with Gradle Wrapper
         run: ./gradlew build --no-daemon
-
-      - name: Run Checkstyle (Code Formatting)
-        run: ./gradlew checkstyleMain checkstyleTest --no-daemon
