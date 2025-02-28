@@ -1,6 +1,6 @@
 package com.cs301.client_service.controllers;
 
-import com.cs301.client_service.config.TestSecurityConfig;
+import com.cs301.client_service.configs.TestSecurityConfig;
 import com.cs301.client_service.constants.Gender;
 import com.cs301.client_service.dtos.ClientDTO;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
@@ -29,9 +29,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.test.context.ActiveProfiles;
 
 @WebMvcTest(ClientController.class)
 @Import(TestSecurityConfig.class)
+@ActiveProfiles("test")
 public class ClientControllerTest {
 
     @Autowired

@@ -1,6 +1,6 @@
 package com.cs301.client_service.controllers;
 
-import com.cs301.client_service.config.TestSecurityConfig;
+import com.cs301.client_service.configs.TestSecurityConfig;
 import com.cs301.client_service.constants.AccountStatus;
 import com.cs301.client_service.constants.AccountType;
 import com.cs301.client_service.dtos.AccountDTO;
@@ -28,9 +28,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.test.context.ActiveProfiles;
 
 @WebMvcTest(AccountController.class)
 @Import(TestSecurityConfig.class)
+@ActiveProfiles("test")
 public class AccountControllerTest {
 
     @Autowired

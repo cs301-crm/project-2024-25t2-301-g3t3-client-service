@@ -1,4 +1,4 @@
-package com.cs301.client_service.config;
+package com.cs301.client_service.configs;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
