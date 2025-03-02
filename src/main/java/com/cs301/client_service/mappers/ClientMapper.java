@@ -43,6 +43,7 @@ public class ClientMapper {
                 .country(model.getCountry())
                 .postalCode(model.getPostalCode())
                 .nric(model.getNric())
+                .agentId(model.getAgentId())
                 .build();
 
         // Handle accounts safely
@@ -77,6 +78,7 @@ public class ClientMapper {
         model.setCountry(dto.getCountry());
         model.setPostalCode(dto.getPostalCode());
         model.setNric(dto.getNric());
+        model.setAgentId(dto.getAgentId());
 
         // Handle accounts safely
         if (dto.getAccounts() != null && !dto.getAccounts().isEmpty()) {
