@@ -5,6 +5,7 @@ import com.cs301.client_service.constants.AccountStatus;
 import com.cs301.client_service.constants.AccountType;
 import com.cs301.client_service.dtos.AccountDTO;
 import com.cs301.client_service.exceptions.AccountNotFoundException;
+import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.mappers.AccountMapper;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
@@ -21,6 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -193,5 +196,40 @@ public class AccountControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(accountService, times(1)).deleteAccount("non-existent-id");
+    }
+    
+    @Test
+    void testGetAccountsByClientId_Success() throws Exception {
+        // Given
+        List<Account> accounts = Arrays.asList(accountModel);
+        List<AccountDTO> accountDTOs = Arrays.asList(accountDTO);
+        
+        when(accountService.getAccountsByClientId(clientId)).thenReturn(accounts);
+        when(accountMapper.toDtoList(accounts)).thenReturn(accountDTOs);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/accounts/client/{clientId}", clientId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].accountId", is(accountId)))
+                .andExpect(jsonPath("$[0].clientId", is(clientId)))
+                .andExpect(jsonPath("$[0].accountType", is(AccountType.SAVINGS.toString())))
+                .andExpect(jsonPath("$[0].currency", is("SGD")));
+
+        verify(accountService, times(1)).getAccountsByClientId(clientId);
+        verify(accountMapper, times(1)).toDtoList(accounts);
+    }
+
+    @Test
+    void testGetAccountsByClientId_ClientNotFound() throws Exception {
+        // Given
+        when(accountService.getAccountsByClientId("non-existent-client"))
+                .thenThrow(new ClientNotFoundException("Client not found"));
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/accounts/client/{clientId}", "non-existent-client"))
+                .andExpect(status().isNotFound());
+
+        verify(accountService, times(1)).getAccountsByClientId("non-existent-client");
+        verify(accountMapper, never()).toDtoList(any());
     }
 }
