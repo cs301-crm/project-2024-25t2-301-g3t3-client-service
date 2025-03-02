@@ -2,11 +2,14 @@ package com.cs301.client_service.controllers;
 
 import com.cs301.client_service.dtos.AccountDTO;
 import com.cs301.client_service.exceptions.AccountNotFoundException;
+import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.mappers.AccountMapper;
 import com.cs301.client_service.services.impl.AccountServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/accounts")
@@ -67,6 +70,18 @@ public class AccountController {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete account", e);
+        }
+    }
+    
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<AccountDTO>> getAccountsByClientId(@PathVariable String clientId) {
+        try {
+            var accounts = accountService.getAccountsByClientId(clientId);
+            return ResponseEntity.ok(accountMapper.toDtoList(accounts));
+        } catch (ClientNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to retrieve accounts for client", e);
         }
     }
 }
