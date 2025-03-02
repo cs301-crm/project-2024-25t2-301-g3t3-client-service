@@ -61,6 +61,8 @@ public class ClientDTO {
     @NotBlank
     @Size(min = 9, max = 9)
     private String nric;
+    
+    private String agentId;
 
     private List<AccountDTO> accounts;
 }
