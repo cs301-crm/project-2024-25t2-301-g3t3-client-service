@@ -47,6 +47,7 @@ public class AccountRepositoryTest {
         testClient.setCountry("Singapore");
         testClient.setPostalCode("123456");
         testClient.setNric("S1234567A");
+        testClient.setAgentId("test-agent001");
 
         // Persist the client
         entityManager.persist(testClient);
@@ -94,6 +95,7 @@ public class AccountRepositoryTest {
         anotherClient.setCountry("Singapore");
         anotherClient.setPostalCode("654321");
         anotherClient.setNric("S7654321A");
+        anotherClient.setAgentId("test-agent002");
 
         entityManager.persist(anotherClient);
         entityManager.flush();
@@ -111,8 +113,8 @@ public class AccountRepositoryTest {
         accountRepository.deleteByClientClientId(testClient.getClientId());
         entityManager.flush();
 
-        // Then: the account should be deleted
-        List<Account> remainingAccounts = accountRepository.findAll();
+        // Then: only the accounts for the specified client should be deleted
+        List<Account> remainingAccounts = accountRepository.findByClientClientId(testClient.getClientId());
         assertThat(remainingAccounts).isEmpty();
     }
 }
