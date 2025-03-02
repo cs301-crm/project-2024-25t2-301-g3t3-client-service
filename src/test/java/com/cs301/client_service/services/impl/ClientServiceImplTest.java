@@ -44,6 +44,7 @@ public class ClientServiceImplTest {
     private Client testClient;
     private final String clientId = "client-uuid";
     private final String nric = "S1234567A";
+    private final String agentId = "agent001";
 
     @BeforeEach
     void setUp() {
@@ -62,6 +63,7 @@ public class ClientServiceImplTest {
         testClient.setCountry("Singapore");
         testClient.setPostalCode("123456");
         testClient.setNric(nric);
+        testClient.setAgentId(agentId);
     }
 
     @Nested
@@ -152,6 +154,48 @@ public class ClientServiceImplTest {
             // Then
             assertThat(results).isEmpty();
             verify(clientRepository, times(1)).findAll();
+        }
+    }
+    
+    @Nested
+    @DisplayName("Get Clients By Agent ID Tests")
+    class GetClientsByAgentIdTests {
+        @Test
+        @DisplayName("Should retrieve all clients for a specific agent")
+        void testGetClientsByAgentId_Success() {
+            // Given
+            Client anotherClient = new Client();
+            anotherClient.setClientId("another-uuid");
+            anotherClient.setFirstName("Jane");
+            anotherClient.setAgentId(agentId);
+
+            when(clientRepository.findByAgentId(agentId)).thenReturn(Arrays.asList(testClient, anotherClient));
+
+            // When
+            List<Client> results = clientService.getClientsByAgentId(agentId);
+
+            // Then
+            assertThat(results).isNotEmpty();
+            assertThat(results).hasSize(2);
+            assertThat(results.get(0).getClientId()).isEqualTo(clientId);
+            assertThat(results.get(1).getClientId()).isEqualTo("another-uuid");
+            assertThat(results.get(0).getAgentId()).isEqualTo(agentId);
+            assertThat(results.get(1).getAgentId()).isEqualTo(agentId);
+            verify(clientRepository, times(1)).findByAgentId(agentId);
+        }
+
+        @Test
+        @DisplayName("Should return empty list when no clients exist for the agent")
+        void testGetClientsByAgentId_EmptyList() {
+            // Given
+            when(clientRepository.findByAgentId("non-existent-agent")).thenReturn(Collections.emptyList());
+
+            // When
+            List<Client> results = clientService.getClientsByAgentId("non-existent-agent");
+
+            // Then
+            assertThat(results).isEmpty();
+            verify(clientRepository, times(1)).findByAgentId("non-existent-agent");
         }
     }
 

@@ -42,6 +42,12 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Client> getClientsByAgentId(String agentId) {
+        return clientRepository.findByAgentId(agentId);
+    }
+
+    @Override
     @Transactional
     public Client updateClient(String clientId, Client client) {
         // Verify client exists
