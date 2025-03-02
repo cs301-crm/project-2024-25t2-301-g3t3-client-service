@@ -52,6 +52,7 @@ public class ClientControllerTest {
     private Client clientModel;
     private String clientId = "client-uuid";
     private String nric = "S1234567A";
+    private String agentId = "agent001";
 
     @BeforeEach
     void setUp() {
@@ -70,6 +71,7 @@ public class ClientControllerTest {
         clientModel.setCountry("Singapore");
         clientModel.setPostalCode("123456");
         clientModel.setNric(nric);
+        clientModel.setAgentId(agentId);
         clientModel.setAccounts(Collections.emptyList());
 
         // Setup client DTO
@@ -87,6 +89,7 @@ public class ClientControllerTest {
         clientDTO.setCountry("Singapore");
         clientDTO.setPostalCode("123456");
         clientDTO.setNric(nric);
+        clientDTO.setAgentId(agentId);
         clientDTO.setAccounts(Collections.emptyList());
     }
 
@@ -139,6 +142,52 @@ public class ClientControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(clientService, times(1)).getClient("non-existent-id");
+        verify(clientMapper, never()).toDto(any(Client.class));
+    }
+    
+    @Test
+    void testGetClientsByAgentId_Success() throws Exception {
+        // Given
+        Client anotherClient = new Client();
+        anotherClient.setClientId("another-uuid");
+        anotherClient.setFirstName("Jane");
+        anotherClient.setAgentId(agentId);
+        
+        ClientDTO anotherClientDTO = new ClientDTO();
+        anotherClientDTO.setClientId("another-uuid");
+        anotherClientDTO.setFirstName("Jane");
+        anotherClientDTO.setAgentId(agentId);
+        
+        when(clientService.getClientsByAgentId(agentId)).thenReturn(java.util.Arrays.asList(clientModel, anotherClient));
+        when(clientMapper.toDto(clientModel)).thenReturn(clientDTO);
+        when(clientMapper.toDto(anotherClient)).thenReturn(anotherClientDTO);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/clients/agent/{agentId}", agentId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].clientId", is(clientId)))
+                .andExpect(jsonPath("$[0].firstName", is("John")))
+                .andExpect(jsonPath("$[0].agentId", is(agentId)))
+                .andExpect(jsonPath("$[1].clientId", is("another-uuid")))
+                .andExpect(jsonPath("$[1].firstName", is("Jane")))
+                .andExpect(jsonPath("$[1].agentId", is(agentId)));
+
+        verify(clientService, times(1)).getClientsByAgentId(agentId);
+        verify(clientMapper, times(2)).toDto(any(Client.class));
+    }
+    
+    @Test
+    void testGetClientsByAgentId_EmptyList() throws Exception {
+        // Given
+        when(clientService.getClientsByAgentId("non-existent-agent")).thenReturn(Collections.emptyList());
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/clients/agent/{agentId}", "non-existent-agent"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+
+        verify(clientService, times(1)).getClientsByAgentId("non-existent-agent");
         verify(clientMapper, never()).toDto(any(Client.class));
     }
 

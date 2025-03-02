@@ -13,7 +13,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/clients")
@@ -54,6 +56,15 @@ public class ClientController {
         var client = clientService.getClient(clientId);
         return ResponseEntity.ok(clientMapper.toDto(client));
     }
+    
+    @GetMapping("/agent/{agentId}")
+    public ResponseEntity<List<ClientDTO>> getClientsByAgentId(@PathVariable String agentId) {
+        var clients = clientService.getClientsByAgentId(agentId);
+        var clientDTOs = clients.stream()
+                .map(clientMapper::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(clientDTOs);
+    }
 
     @PutMapping("/{clientId}")
     public ResponseEntity<ClientDTO> updateClient(
@@ -71,7 +82,7 @@ public class ClientController {
     }
 
     /**
-     * Verify a client's identity using NRIC
+     * TODO: Verify a client's identity using NRIC??? Fix later
      */
     @PostMapping("/{clientId}/verify")
     public ResponseEntity<Map<String, Boolean>> verifyClient(
