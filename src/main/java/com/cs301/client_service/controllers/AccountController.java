@@ -1,16 +1,11 @@
 package com.cs301.client_service.controllers;
 
 import com.cs301.client_service.dtos.AccountDTO;
-import com.cs301.client_service.exceptions.AccountNotFoundException;
-import com.cs301.client_service.exceptions.ApiException;
-import com.cs301.client_service.exceptions.ClientNotFoundException;
-import com.cs301.client_service.exceptions.ErrorResponse;
 import com.cs301.client_service.mappers.AccountMapper;
 import com.cs301.client_service.services.impl.AccountServiceImpl;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

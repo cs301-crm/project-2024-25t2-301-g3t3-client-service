@@ -2,7 +2,6 @@ package com.cs301.client_service.controllers;
 
 import com.cs301.client_service.dtos.ClientDTO;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
-import com.cs301.client_service.exceptions.ErrorResponse;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.mappers.ClientMapper;
 import com.cs301.client_service.services.impl.ClientServiceImpl;
@@ -14,7 +13,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
