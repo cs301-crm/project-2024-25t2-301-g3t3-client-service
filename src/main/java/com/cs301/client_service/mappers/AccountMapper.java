@@ -62,7 +62,7 @@ public class AccountMapper {
         }
         return models.stream()
                 .map(this::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<Account> toModelList(List<AccountDTO> dtos) {
@@ -71,6 +71,6 @@ public class AccountMapper {
         }
         return dtos.stream()
                 .map(this::toModel)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

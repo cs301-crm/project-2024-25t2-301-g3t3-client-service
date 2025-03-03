@@ -10,6 +10,8 @@ class ClientServiceApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// This test verifies that the Spring application context loads successfully
+		// No assertions needed as the test will fail if context cannot be loaded
 	}
 
 }
