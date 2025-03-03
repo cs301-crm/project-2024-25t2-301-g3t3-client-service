@@ -135,13 +135,14 @@ class ClientControllerTest {
     @Test
     void testGetClient_NotFound() throws Exception {
         // Given
-        when(clientService.getClient(anyString())).thenThrow(new ClientNotFoundException("Client not found"));
+        String nonExistentId = "non-existent-id";
+        when(clientService.getClient(anyString())).thenThrow(new ClientNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(get("/api/v1/clients/{clientId}", "non-existent-id"))
+        mockMvc.perform(get("/api/v1/clients/{clientId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
-        verify(clientService, times(1)).getClient("non-existent-id");
+        verify(clientService, times(1)).getClient(nonExistentId);
         verify(clientMapper, never()).toDto(any(Client.class));
     }
     
@@ -214,18 +215,19 @@ class ClientControllerTest {
     @Test
     void testUpdateClient_NotFound() throws Exception {
         // Given
+        String nonExistentId = "non-existent-id";
         when(clientMapper.toModel(any(ClientDTO.class))).thenReturn(clientModel);
         when(clientService.updateClient(anyString(), any(Client.class)))
-                .thenThrow(new ClientNotFoundException("Client not found"));
+                .thenThrow(new ClientNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(put("/api/v1/clients/{clientId}", "non-existent-id")
+        mockMvc.perform(put("/api/v1/clients/{clientId}", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(clientDTO)))
                 .andExpect(status().isNotFound());
 
         verify(clientMapper, times(1)).toModel(any(ClientDTO.class));
-        verify(clientService, times(1)).updateClient(eq("non-existent-id"), any(Client.class));
+        verify(clientService, times(1)).updateClient(eq(nonExistentId), any(Client.class));
         verify(clientMapper, never()).toDto(any(Client.class));
     }
 
@@ -244,14 +246,15 @@ class ClientControllerTest {
     @Test
     void testDeleteClient_NotFound() throws Exception {
         // Given
-        doThrow(new ClientNotFoundException("Client not found"))
-                .when(clientService).deleteClient("non-existent-id");
+        String nonExistentId = "non-existent-id";
+        doThrow(new ClientNotFoundException(nonExistentId))
+                .when(clientService).deleteClient(nonExistentId);
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/clients/{clientId}", "non-existent-id"))
+        mockMvc.perform(delete("/api/v1/clients/{clientId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
-        verify(clientService, times(1)).deleteClient("non-existent-id");
+        verify(clientService, times(1)).deleteClient(nonExistentId);
     }
 
     @Test
@@ -294,20 +297,21 @@ class ClientControllerTest {
     @Test
     void testVerifyClient_ClientNotFound() throws Exception {
         // Given
+        String nonExistentId = "non-existent-id";
         Map<String, String> payload = new HashMap<>();
         payload.put("nric", nric);
 
-        doThrow(new ClientNotFoundException("Client not found"))
-                .when(clientService).verifyClient("non-existent-id", nric);
+        doThrow(new ClientNotFoundException(nonExistentId))
+                .when(clientService).verifyClient(nonExistentId, nric);
 
         // When & Then
-        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", "non-existent-id")
+        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verified", is(false)));
 
-        verify(clientService, times(1)).verifyClient("non-existent-id", nric);
+        verify(clientService, times(1)).verifyClient(nonExistentId, nric);
     }
 
     @Test

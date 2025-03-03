@@ -125,13 +125,14 @@ class AccountControllerTest {
     @Test
     void testGetAccount_NotFound() throws Exception {
         // Given
-        when(accountService.getAccount(anyString())).thenThrow(new AccountNotFoundException("Account not found"));
+        String nonExistentId = "non-existent-id";
+        when(accountService.getAccount(anyString())).thenThrow(new AccountNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(get("/api/v1/accounts/{accountId}", "non-existent-id"))
+        mockMvc.perform(get("/api/v1/accounts/{accountId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
-        verify(accountService, times(1)).getAccount("non-existent-id");
+        verify(accountService, times(1)).getAccount(nonExistentId);
         verify(accountMapper, never()).toDto(any(Account.class));
     }
 
@@ -158,18 +159,19 @@ class AccountControllerTest {
     @Test
     void testUpdateAccount_NotFound() throws Exception {
         // Given
+        String nonExistentId = "non-existent-id";
         when(accountMapper.toModel(any(AccountDTO.class))).thenReturn(accountModel);
         when(accountService.updateAccount(anyString(), any(Account.class)))
-                .thenThrow(new AccountNotFoundException("Account not found"));
+                .thenThrow(new AccountNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(put("/api/v1/accounts/{accountId}", "non-existent-id")
+        mockMvc.perform(put("/api/v1/accounts/{accountId}", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(accountDTO)))
                 .andExpect(status().isNotFound());
 
         verify(accountMapper, times(1)).toModel(any(AccountDTO.class));
-        verify(accountService, times(1)).updateAccount(eq("non-existent-id"), any(Account.class));
+        verify(accountService, times(1)).updateAccount(eq(nonExistentId), any(Account.class));
         verify(accountMapper, never()).toDto(any(Account.class));
     }
 
@@ -188,14 +190,15 @@ class AccountControllerTest {
     @Test
     void testDeleteAccount_NotFound() throws Exception {
         // Given
-        doThrow(new AccountNotFoundException("Account not found"))
-                .when(accountService).deleteAccount("non-existent-id");
+        String nonExistentId = "non-existent-id";
+        doThrow(new AccountNotFoundException(nonExistentId))
+                .when(accountService).deleteAccount(nonExistentId);
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/accounts/{accountId}", "non-existent-id"))
+        mockMvc.perform(delete("/api/v1/accounts/{accountId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
-        verify(accountService, times(1)).deleteAccount("non-existent-id");
+        verify(accountService, times(1)).deleteAccount(nonExistentId);
     }
     
     @Test
@@ -222,14 +225,15 @@ class AccountControllerTest {
     @Test
     void testGetAccountsByClientId_ClientNotFound() throws Exception {
         // Given
-        when(accountService.getAccountsByClientId("non-existent-client"))
-                .thenThrow(new ClientNotFoundException("Client not found"));
+        String nonExistentClient = "non-existent-client";
+        when(accountService.getAccountsByClientId(nonExistentClient))
+                .thenThrow(new ClientNotFoundException(nonExistentClient));
 
         // When & Then
-        mockMvc.perform(get("/api/v1/accounts/client/{clientId}", "non-existent-client"))
+        mockMvc.perform(get("/api/v1/accounts/client/{clientId}", nonExistentClient))
                 .andExpect(status().isNotFound());
 
-        verify(accountService, times(1)).getAccountsByClientId("non-existent-client");
+        verify(accountService, times(1)).getAccountsByClientId(nonExistentClient);
         verify(accountMapper, never()).toDtoList(any());
     }
 }
