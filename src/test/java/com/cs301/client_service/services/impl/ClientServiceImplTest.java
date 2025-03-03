@@ -30,7 +30,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ClientServiceImplTest {
+class ClientServiceImplTest {
 
     @Mock
     private ClientRepository clientRepository;

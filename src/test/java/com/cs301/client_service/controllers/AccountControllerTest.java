@@ -36,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 @WebMvcTest(AccountController.class)
 @Import(TestSecurityConfig.class)
 @ActiveProfiles("test")
-public class AccountControllerTest {
+class AccountControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

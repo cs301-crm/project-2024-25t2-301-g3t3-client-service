@@ -29,7 +29,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class AccountServiceImplTest {
+class AccountServiceImplTest {
 
     @Mock
     private AccountRepository accountRepository;
