@@ -1,4 +1,4 @@
-package com.cs301.client_service.config;
+package com.cs301.client_service.configs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
