@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/clients")
 public class ClientController {
     private static final Logger logger = LoggerFactory.getLogger(ClientController.class);
+    private static final String VERIFIED = "verified";
 
     private final ClientServiceImpl clientService;
     private final ClientMapper clientMapper;
@@ -62,7 +63,7 @@ public class ClientController {
         var clients = clientService.getClientsByAgentId(agentId);
         var clientDTOs = clients.stream()
                 .map(clientMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(clientDTOs);
     }
 
@@ -91,15 +92,15 @@ public class ClientController {
 
         String nric = payload.get("nric");
         if (nric == null || nric.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("verified", false));
+            return ResponseEntity.badRequest().body(Map.of(VERIFIED, false));
         }
 
         try {
             clientService.verifyClient(clientId, nric);
-            return ResponseEntity.ok(Map.of("verified", true));
+            return ResponseEntity.ok(Map.of(VERIFIED, true));
         } catch (ClientNotFoundException | VerificationException e) {
             logger.warn("Verification failed: {}", e.getMessage());
-            return ResponseEntity.ok(Map.of("verified", false));
+            return ResponseEntity.ok(Map.of(VERIFIED, false));
         }
     }
 }
