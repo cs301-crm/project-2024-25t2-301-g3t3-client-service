@@ -19,6 +19,7 @@ CREATE TABLE clients (
     postal_code VARCHAR(10) NOT NULL,
     nric VARCHAR(9) NOT NULL UNIQUE,
     agent_id VARCHAR(36) NOT NULL,
+    verification_status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (verification_status IN ('PENDING', 'VERIFIED')),
     PRIMARY KEY (client_id)
 );
 
@@ -50,10 +51,10 @@ CREATE TABLE logs (
 );
 
 -- Insert Test Clients
-INSERT INTO clients (client_id, first_name, last_name, date_of_birth, gender, email_address, phone_number, address, city, state, country, postal_code, nric, agent_id)
+INSERT INTO clients (client_id, first_name, last_name, date_of_birth, gender, email_address, phone_number, address, city, state, country, postal_code, nric, agent_id, verification_status)
 VALUES 
-('c1000000-0000-0000-0000-000000000001', 'Test', 'User', '1990-01-01', 'MALE', 'test.user@example.com', '+6599999999', '1 Test Street', 'Test City', 'Test State', 'Test Country', '123456', 'S9876543Z', 'test-agent001'),
-('c2000000-0000-0000-0000-000000000002', 'Test', 'Admin', '1985-05-05', 'FEMALE', 'test.admin@example.com', '+6588888888', '2 Test Avenue', 'Test City', 'Test State', 'Test Country', '654321', 'S8765432Y', 'test-agent002');
+('c1000000-0000-0000-0000-000000000001', 'Test', 'User', '1990-01-01', 'MALE', 'test.user@example.com', '+6599999999', '1 Test Street', 'Test City', 'Test State', 'Test Country', '123456', 'S9876543Z', 'test-agent001', 'VERIFIED'),
+('c2000000-0000-0000-0000-000000000002', 'Test', 'Admin', '1985-05-05', 'FEMALE', 'test.admin@example.com', '+6588888888', '2 Test Avenue', 'Test City', 'Test State', 'Test Country', '654321', 'S8765432Y', 'test-agent002', 'PENDING');
 
 -- Insert Test Accounts
 INSERT INTO accounts (account_id, client_id, account_type, account_status, opening_date, initial_deposit, currency, branch_id)

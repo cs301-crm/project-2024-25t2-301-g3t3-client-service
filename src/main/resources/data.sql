@@ -19,6 +19,7 @@ CREATE TABLE clients (
     postal_code VARCHAR(10) NOT NULL,
     nric VARCHAR(9) NOT NULL UNIQUE,
     agent_id VARCHAR(36) NOT NULL,
+    verification_status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (verification_status IN ('PENDING', 'VERIFIED')),
     PRIMARY KEY (client_id)
 );
 
@@ -50,11 +51,11 @@ CREATE TABLE logs (
 );
 
 -- Insert Clients
-INSERT INTO clients (client_id, first_name, last_name, date_of_birth, gender, email_address, phone_number, address, city, state, country, postal_code, nric, agent_id)
+INSERT INTO clients (client_id, first_name, last_name, date_of_birth, gender, email_address, phone_number, address, city, state, country, postal_code, nric, agent_id, verification_status)
 VALUES 
-('c1000000-0000-0000-0000-000000000001', 'John', 'Doe', '1985-05-15', 'MALE', 'john.doe@example.com', '+6591234567', '123 Main Street', 'Singapore', 'Central', 'Singapore', '123456', 'S1234567A', 'a1000000-0000-0000-0000-000000000001'),
-('c2000000-0000-0000-0000-000000000002', 'Jane', 'Smith', '1990-08-22', 'FEMALE', 'jane.smith@example.com', '+6598765432', '456 Park Avenue', 'Singapore', 'East', 'Singapore', '654321', 'S2345678B', 'a1000000-0000-0000-0000-000000000001'),
-('c3000000-0000-0000-0000-000000000003', 'Michael', 'Wong', '1978-12-10', 'MALE', 'michael.wong@example.com', '+6590001111', '789 Orchard Road', 'Singapore', 'West', 'Singapore', '789012', 'S3456789C', 'a2000000-0000-0000-0000-000000000002');
+('c1000000-0000-0000-0000-000000000001', 'John', 'Doe', '1985-05-15', 'MALE', 'john.doe@example.com', '+6591234567', '123 Main Street', 'Singapore', 'Central', 'Singapore', '123456', 'S1234567A', 'a1000000-0000-0000-0000-000000000001', 'VERIFIED'),
+('c2000000-0000-0000-0000-000000000002', 'Jane', 'Smith', '1990-08-22', 'FEMALE', 'jane.smith@example.com', '+6598765432', '456 Park Avenue', 'Singapore', 'East', 'Singapore', '654321', 'S2345678B', 'a1000000-0000-0000-0000-000000000001', 'VERIFIED'),
+('c3000000-0000-0000-0000-000000000003', 'Michael', 'Wong', '1978-12-10', 'MALE', 'michael.wong@example.com', '+6590001111', '789 Orchard Road', 'Singapore', 'West', 'Singapore', '789012', 'S3456789C', 'a2000000-0000-0000-0000-000000000002', 'PENDING');
 
 -- Insert Accounts for John Doe
 INSERT INTO accounts (account_id, client_id, account_type, account_status, opening_date, initial_deposit, currency, branch_id)
