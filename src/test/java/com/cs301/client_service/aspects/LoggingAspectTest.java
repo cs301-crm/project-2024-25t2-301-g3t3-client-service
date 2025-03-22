@@ -166,19 +166,32 @@ public class LoggingAspectTest {
             assertEquals(Log.CrudType.UPDATE, log.getCrudType());
             assertEquals(savedClient.getClientId(), log.getClientId());
             
-            if ("firstName".equals(log.getAttributeName())) {
-                assertEquals(originalFirstName, log.getBeforeValue());
-                assertEquals("Bob", log.getAfterValue());
+            // Check if this is a combined attribute log
+            if (log.getAttributeName() != null && log.getAttributeName().contains("firstName") && log.getAttributeName().contains("phoneNumber")) {
+                // Combined log with both attributes
+                assertTrue(log.getBeforeValue().contains("firstName: " + originalFirstName), "Before value should contain original firstName");
+                assertTrue(log.getBeforeValue().contains("phoneNumber: " + originalPhoneNumber), "Before value should contain original phoneNumber");
+                assertTrue(log.getAfterValue().contains("firstName: Bob"), "After value should contain new firstName");
+                assertTrue(log.getAfterValue().contains("phoneNumber: 6666666666"), "After value should contain new phoneNumber");
                 foundFirstNameChange = true;
-            } else if ("phoneNumber".equals(log.getAttributeName())) {
-                assertEquals(originalPhoneNumber, log.getBeforeValue());
-                assertEquals("6666666666", log.getAfterValue());
                 foundPhoneNumberChange = true;
+            } else {
+                // Individual attribute logs
+                if ("firstName".equals(log.getAttributeName())) {
+                    assertEquals(originalFirstName, log.getBeforeValue());
+                    assertEquals("Bob", log.getAfterValue());
+                    foundFirstNameChange = true;
+                } else if ("phoneNumber".equals(log.getAttributeName())) {
+                    assertEquals(originalPhoneNumber, log.getBeforeValue());
+                    assertEquals("6666666666", log.getAfterValue());
+                    foundPhoneNumberChange = true;
+                }
             }
         }
         
-        // Verify at least one change was logged
+        // Verify both changes were logged
         assertTrue(foundFirstNameChange, "First name change should be logged");
+        assertTrue(foundPhoneNumberChange, "Phone number change should be logged");
     }
 
     @Test
@@ -285,65 +298,46 @@ public class LoggingAspectTest {
         // Verify basic log properties
         assertEquals(Log.CrudType.UPDATE, log.getCrudType());
         assertEquals(savedClient.getClientId(), log.getClientId());
-        assertNotNull(log.getAttributesJson(), "attributesJson should not be null");
-        assertFalse(log.getAttributesJson().isEmpty(), "attributesJson should not be empty");
         
-        // Verify that attributesJson contains all changed attributes
-        Map<String, Object> attributes = log.getAttributes();
-        assertNotNull(attributes, "Attributes map should not be null");
-        assertFalse(attributes.isEmpty(), "Attributes map should not be empty");
-        
-        // Verify each attribute change is present in the map
-        assertTrue(attributes.containsKey("firstName"), "firstName change should be logged");
-        assertTrue(attributes.containsKey("lastName"), "lastName change should be logged");
-        assertTrue(attributes.containsKey("phoneNumber"), "phoneNumber change should be logged");
-        assertTrue(attributes.containsKey("address"), "address change should be logged");
-        assertTrue(attributes.containsKey("city"), "city change should be logged");
-        
-        // Verify the values of each attribute change
-        @SuppressWarnings("unchecked")
-        Map.Entry<String, String> firstNameChange = (Map.Entry<String, String>) attributes.get("firstName");
-        assertEquals(originalFirstName, firstNameChange.getKey());
-        assertEquals("Mike", firstNameChange.getValue());
-        
-        @SuppressWarnings("unchecked")
-        Map.Entry<String, String> lastNameChange = (Map.Entry<String, String>) attributes.get("lastName");
-        assertEquals(originalLastName, lastNameChange.getKey());
-        assertEquals("Williams", lastNameChange.getValue());
-        
-        @SuppressWarnings("unchecked")
-        Map.Entry<String, String> phoneChange = (Map.Entry<String, String>) attributes.get("phoneNumber");
-        assertEquals(originalPhone, phoneChange.getKey());
-        assertEquals("9879879876", phoneChange.getValue());
-        
-        @SuppressWarnings("unchecked")
-        Map.Entry<String, String> addressChange = (Map.Entry<String, String>) attributes.get("address");
-        assertEquals(originalAddress, addressChange.getKey());
-        assertEquals("777 Maple Blvd", addressChange.getValue());
-        
-        @SuppressWarnings("unchecked")
-        Map.Entry<String, String> cityChange = (Map.Entry<String, String>) attributes.get("city");
-        assertEquals(originalCity, cityChange.getKey());
-        assertEquals("New City", cityChange.getValue());
-        
-        // Verify that for backward compatibility, the first attribute is also set in the traditional fields
+        // Verify that attributeName contains all changed attribute names
         assertNotNull(log.getAttributeName(), "attributeName should not be null");
-        assertNotNull(log.getBeforeValue(), "beforeValue should not be null");
-        assertNotNull(log.getAfterValue(), "afterValue should not be null");
+        assertFalse(log.getAttributeName().isEmpty(), "attributeName should not be empty");
+        
+        // Check that all attribute names are present
+        String attributeNames = log.getAttributeName();
+        assertTrue(attributeNames.contains("firstName"), "firstName should be in attributeName");
+        assertTrue(attributeNames.contains("lastName"), "lastName should be in attributeName");
+        assertTrue(attributeNames.contains("phoneNumber"), "phoneNumber should be in attributeName");
+        assertTrue(attributeNames.contains("address"), "address should be in attributeName");
+        assertTrue(attributeNames.contains("city"), "city should be in attributeName");
+        
+        // Verify beforeValue contains all original values
+        String beforeValue = log.getBeforeValue();
+        assertNotNull(beforeValue, "beforeValue should not be null");
+        assertFalse(beforeValue.isEmpty(), "beforeValue should not be empty");
+        
+        assertTrue(beforeValue.contains("firstName: " + originalFirstName), "beforeValue should contain original firstName");
+        assertTrue(beforeValue.contains("lastName: " + originalLastName), "beforeValue should contain original lastName");
+        assertTrue(beforeValue.contains("phoneNumber: " + originalPhone), "beforeValue should contain original phoneNumber");
+        assertTrue(beforeValue.contains("address: " + originalAddress), "beforeValue should contain original address");
+        assertTrue(beforeValue.contains("city: " + originalCity), "beforeValue should contain original city");
+        
+        // Verify afterValue contains all new values
+        String afterValue = log.getAfterValue();
+        assertNotNull(afterValue, "afterValue should not be null");
+        assertFalse(afterValue.isEmpty(), "afterValue should not be empty");
+        
+        assertTrue(afterValue.contains("firstName: Mike"), "afterValue should contain new firstName");
+        assertTrue(afterValue.contains("lastName: Williams"), "afterValue should contain new lastName");
+        assertTrue(afterValue.contains("phoneNumber: 9879879876"), "afterValue should contain new phoneNumber");
+        assertTrue(afterValue.contains("address: 777 Maple Blvd"), "afterValue should contain new address");
+        assertTrue(afterValue.contains("city: New City"), "afterValue should contain new city");
         
         // Print the log details for debugging
         System.out.println("Multi-attribute update log:");
         System.out.println("  CRUD Type: " + log.getCrudType());
-        System.out.println("  Attribute Name: " + log.getAttributeName());
-        System.out.println("  Before Value: " + log.getBeforeValue());
-        System.out.println("  After Value: " + log.getAfterValue());
-        System.out.println("  Attributes JSON: " + log.getAttributesJson());
-        System.out.println("  Number of attributes: " + attributes.size());
-        
-        for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-            @SuppressWarnings("unchecked")
-            Map.Entry<String, String> valueEntry = (Map.Entry<String, String>) entry.getValue();
-            System.out.println("    " + entry.getKey() + ": " + valueEntry.getKey() + " -> " + valueEntry.getValue());
-        }
+        System.out.println("  Attribute Names: " + log.getAttributeName());
+        System.out.println("  Before Values: " + log.getBeforeValue());
+        System.out.println("  After Values: " + log.getAfterValue());
     }
 }

@@ -128,25 +128,41 @@ public class LoggingAspect {
             Map<String, Map.Entry<String, String>> changes = LoggingUtils.compareEntities(oldClient, newClient);
             
             if (!changes.isEmpty()) {
+                // Create a consolidated string of all attribute names
+                StringBuilder attributeNames = new StringBuilder();
+                // Create consolidated strings for before and after values
+                StringBuilder beforeValues = new StringBuilder();
+                StringBuilder afterValues = new StringBuilder();
+                
+                boolean first = true;
+                for (Map.Entry<String, Map.Entry<String, String>> change : changes.entrySet()) {
+                    if (!first) {
+                        attributeNames.append(", ");
+                        beforeValues.append(", ");
+                        afterValues.append(", ");
+                    }
+                    
+                    String attrName = change.getKey();
+                    String beforeValue = change.getValue().getKey();
+                    String afterValue = change.getValue().getValue();
+                    
+                    attributeNames.append(attrName);
+                    beforeValues.append(attrName).append(": ").append(beforeValue);
+                    afterValues.append(attrName).append(": ").append(afterValue);
+                    
+                    first = false;
+                }
+                
                 // Create a single log entry with all changes
                 Log log = Log.builder()
                         .crudType(Log.CrudType.UPDATE)
+                        .attributeName(attributeNames.toString())
+                        .beforeValue(beforeValues.toString())
+                        .afterValue(afterValues.toString())
                         .agentId(LoggingUtils.getCurrentAgentId())
                         .clientId(clientId)
                         .dateTime(LocalDateTime.now())
                         .build();
-                
-                // Store all changes in the attributesJson field
-                log.setAttributes(changes);
-                
-                // For backward compatibility and display purposes, 
-                // also set the first attribute in the attributeName field
-                if (!changes.isEmpty()) {
-                    Map.Entry<String, Map.Entry<String, String>> firstChange = changes.entrySet().iterator().next();
-                    log.setAttributeName(firstChange.getKey());
-                    log.setBeforeValue(firstChange.getValue().getKey());
-                    log.setAfterValue(firstChange.getValue().getValue());
-                }
                 
                 logRepository.save(log);
             }
