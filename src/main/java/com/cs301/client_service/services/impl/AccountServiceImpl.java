@@ -1,7 +1,9 @@
 package com.cs301.client_service.services.impl;
 
+import com.cs301.client_service.constants.VerificationStatus;
 import com.cs301.client_service.exceptions.AccountNotFoundException;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
+import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
 import com.cs301.client_service.repositories.AccountRepository;
@@ -27,6 +29,11 @@ public class AccountServiceImpl implements AccountService {
         // Verify client exists
         Client client = clientRepository.findById(account.getClient().getClientId())
                 .orElseThrow(() -> new ClientNotFoundException(account.getClient().getClientId()));
+        
+        // Check if client is verified
+        if (client.getVerificationStatus() != VerificationStatus.VERIFIED) {
+            throw new VerificationException("Cannot create account for unverified client. Client must be verified first.");
+        }
 
         account.setClient(client);
         return accountRepository.save(account);
