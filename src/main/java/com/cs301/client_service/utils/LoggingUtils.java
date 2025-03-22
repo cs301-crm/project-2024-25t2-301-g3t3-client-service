@@ -144,4 +144,41 @@ public class LoggingUtils {
         // For now, we'll return a placeholder
         return "system";
     }
+    
+    /**
+     * Converts a Client object to a comma-delimited string of values
+     * @param client The client to convert
+     * @return Comma-delimited string of values
+     */
+    public static String convertClientToCommaSeparatedValues(Client client) {
+        if (client == null) {
+            return "";
+        }
+        
+        StringBuilder values = new StringBuilder();
+        values.append(client.getClientId()).append(",")
+              .append(client.getFirstName()).append(",")
+              .append(client.getLastName()).append(",")
+              .append(client.getDateOfBirth()).append(",")
+              .append(client.getGender()).append(",")
+              .append(client.getEmailAddress()).append(",")
+              .append(client.getPhoneNumber()).append(",")
+              .append(client.getAddress()).append(",")
+              .append(client.getCity()).append(",")
+              .append(client.getState()).append(",")
+              .append(client.getCountry()).append(",")
+              .append(client.getPostalCode()).append(",")
+              .append(client.getNric()).append(",")
+              .append(client.getAgentId());
+        
+        return values.toString();
+    }
+    
+    /**
+     * Gets a comma-delimited string of client attribute names
+     * @return Comma-delimited string of attribute names
+     */
+    public static String getClientAttributeNames() {
+        return "clientId,firstName,lastName,dateOfBirth,gender,emailAddress,phoneNumber,address,city,state,country,postalCode,nric,agentId";
+    }
 }
