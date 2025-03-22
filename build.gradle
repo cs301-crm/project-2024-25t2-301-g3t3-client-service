@@ -12,6 +12,9 @@ sourceCompatibility = '17'
 
 repositories {
 	mavenCentral()
+	maven {
+		url "https://packages.confluent.io/maven/"
+	}
 }
 
 dependencies {
@@ -23,10 +26,14 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
-
-	// Protocol Buffers
-	implementation 'com.google.protobuf:protobuf-java:3.25.0'
-	implementation 'com.google.protobuf:protobuf-java-util:3.25.0'
+	
+	// Kafka
+	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'org.springframework.kafka:spring-kafka-test'
+	implementation 'io.confluent:kafka-protobuf-serializer:7.5.1'
+	implementation 'io.confluent:kafka-schema-registry-client:7.5.1'
+	implementation 'com.google.protobuf:protobuf-java:3.25.5'
+	implementation 'com.google.protobuf:protobuf-java-util:3.25.5'
 	// Swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
 
@@ -48,11 +55,13 @@ dependencies {
 
 protobuf {
 	protoc {
-		artifact = 'com.google.protobuf:protoc:3.25.0'
+		artifact = 'com.google.protobuf:protoc:3.25.5'
 	}
 	generateProtoTasks {
-		all()*.plugins {
-			java {}
+		all().each { task ->
+			task.builtins {
+				java {}
+			}
 		}
 	}
 }
@@ -64,4 +73,22 @@ test {
 // Define the main class for the application
 application {
     mainClass = 'com.cs301.client_service.ClientServiceApplication'
+}
+
+// Add generated sources to the source sets
+sourceSets {
+    main {
+        java {
+            srcDirs += "$projectDir/build/generated/source/proto/main/java"
+        }
+    }
+}
+
+// Task to run the Kafka consumer test
+task runConsumer(type: JavaExec) {
+    description = 'Runs the Kafka consumer test'
+    group = 'application'
+    
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.cs301.client_service.kafka.KafkaConsumerTest'
 }
