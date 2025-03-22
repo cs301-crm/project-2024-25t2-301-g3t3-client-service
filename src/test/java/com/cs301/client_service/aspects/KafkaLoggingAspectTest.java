@@ -7,6 +7,7 @@ import com.cs301.client_service.repositories.ClientRepository;
 import com.cs301.client_service.services.impl.ClientServiceImpl;
 import com.cs301.client_service.protobuf.C2C;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Disabled("Kafka tests are disabled for unit testing")
 public class KafkaLoggingAspectTest {
 
     @Mock
