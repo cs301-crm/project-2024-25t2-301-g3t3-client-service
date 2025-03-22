@@ -325,14 +325,18 @@ class ClientServiceImplTest {
     @DisplayName("Verify Client Tests")
     class VerifyClientTests {
         @Test
-        @DisplayName("Should successfully verify a client with correct NRIC")
+        @DisplayName("Should successfully verify a client")
         void testVerifyClient_Success() {
             // Given
             when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+            when(clientRepository.save(any(Client.class))).thenReturn(testClient);
 
-            // When & Then - Should not throw exception
-            clientService.verifyClient(clientId, nric);
+            // When
+            clientService.verifyClient(clientId);
+
+            // Then
             verify(clientRepository, times(1)).findById(clientId);
+            verify(clientRepository, times(1)).save(any(Client.class));
         }
 
         @Test
@@ -344,25 +348,13 @@ class ClientServiceImplTest {
 
             // When & Then
             ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
-                clientService.verifyClient(nonExistentId, nric);
+                clientService.verifyClient(nonExistentId);
             });
             
             // Verify the exception message contains the ID
             assertThat(exception.getMessage()).contains(nonExistentId);
             verify(clientRepository, times(1)).findById(nonExistentId);
-        }
-
-        @Test
-        @DisplayName("Should throw VerificationException for incorrect NRIC")
-        void testVerifyClient_IncorrectNric() {
-            // Given
-            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
-
-            // When & Then
-            assertThrows(VerificationException.class, () -> {
-                clientService.verifyClient(clientId, "wrong-nric");
-            });
-            verify(clientRepository, times(1)).findById(clientId);
+            verify(clientRepository, never()).save(any(Client.class));
         }
     }
 }

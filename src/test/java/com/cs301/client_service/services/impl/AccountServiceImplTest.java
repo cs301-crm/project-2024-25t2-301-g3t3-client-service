@@ -2,6 +2,7 @@ package com.cs301.client_service.services.impl;
 
 import com.cs301.client_service.constants.AccountStatus;
 import com.cs301.client_service.constants.AccountType;
+import com.cs301.client_service.constants.VerificationStatus;
 import com.cs301.client_service.exceptions.AccountNotFoundException;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.models.Account;
@@ -52,6 +53,7 @@ class AccountServiceImplTest {
         testClient.setClientId(clientId);
         testClient.setFirstName("John");
         testClient.setLastName("Doe");
+        testClient.setVerificationStatus(VerificationStatus.VERIFIED);
 
         // Setup test account
         testAccount = new Account();
