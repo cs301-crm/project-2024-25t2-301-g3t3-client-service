@@ -1,6 +1,7 @@
 package com.cs301.client_service.services.impl;
 
 import com.cs301.client_service.constants.AccountStatus;
+import com.cs301.client_service.constants.VerificationStatus;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.models.Account;
@@ -71,13 +72,14 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public void verifyClient(String clientId, String nric) {
+    @Transactional
+    public void verifyClient(String clientId) {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new ClientNotFoundException(clientId));
-
-        if (!client.getNric().equals(nric)) {
-            throw new VerificationException("Invalid NRIC provided");
-        }
+        
+        // Update verification status to VERIFIED
+        client.setVerificationStatus(VerificationStatus.VERIFIED);
+        clientRepository.save(client);
     }
 
     private void validateClientOperation(String clientId, String operation) {

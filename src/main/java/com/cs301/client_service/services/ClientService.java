@@ -10,5 +10,5 @@ public interface ClientService {
     List<Client> getClientsByAgentId(String agentId);
     Client updateClient(String clientId, Client client);
     void deleteClient(String clientId);
-    void verifyClient(String clientId, String nric);
+    void verifyClient(String clientId);
 }

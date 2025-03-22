@@ -91,26 +91,20 @@ public class ClientController {
     }
 
     /**
-     * TODO: Verify a client's identity using NRIC??? Fix later
+     * Verify a client to activate their profile
+     * This changes their status from PENDING to VERIFIED
      */
     @PostMapping("/{clientId}/verify")
-    public ResponseEntity<Map<String, Boolean>> verifyClient(
-            @PathVariable String clientId,
-            @RequestBody Map<String, String> payload) {
-        logger.debug("Received verify client request");
-        String nric = payload.get("nric");
-        if (nric == null || nric.isBlank()) {
-            logger.warn("NRIC is null or blank");
-            return ResponseEntity.badRequest().body(Map.of(VERIFIED, false));
-        }
-
+    public ResponseEntity<Map<String, Boolean>> verifyClient(@PathVariable String clientId) {
+        logger.debug("Received verify client request for client ID: {}", clientId);
+        
         try {
-            clientService.verifyClient(clientId, nric);
+            clientService.verifyClient(clientId);
             logger.debug("Client verified successfully");
             return ResponseEntity.ok(Map.of(VERIFIED, true));
-        } catch (ClientNotFoundException | VerificationException e) {
-            logger.warn("Verification failed exception occurred: {}", e.getMessage());
-            return ResponseEntity.ok(Map.of(VERIFIED, false));
+        } catch (ClientNotFoundException e) {
+            logger.warn("Verification failed: Client not found with ID: {}", clientId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(VERIFIED, false));
         }
     }
 }
