@@ -44,6 +44,7 @@ public class LoggingAspectTest {
                 .country("Singapore")
                 .postalCode("123456")
                 .nric("S1234567A")
+                .agentId("test-agent001")
                 .build();
 
         // Save the client
@@ -80,6 +81,7 @@ public class LoggingAspectTest {
                 .country("Singapore")
                 .postalCode("654321")
                 .nric("S9876543B")
+                .agentId("test-agent002")
                 .build();
 
         // Save the client
@@ -119,6 +121,7 @@ public class LoggingAspectTest {
                 .country("Singapore")
                 .postalCode("789012")
                 .nric("S7890123C")
+                .agentId("test-agent003")
                 .build();
 
         // Save the client
@@ -194,6 +197,7 @@ public class LoggingAspectTest {
                 .country("Singapore")
                 .postalCode("101202")
                 .nric("S1012023D")
+                .agentId("test-agent004")
                 .build();
 
         // Save the client
@@ -234,6 +238,7 @@ public class LoggingAspectTest {
                 .country("Singapore")
                 .postalCode("555666")
                 .nric("S5556667E")
+                .agentId("test-agent005")
                 .build();
 
         // Save the client
