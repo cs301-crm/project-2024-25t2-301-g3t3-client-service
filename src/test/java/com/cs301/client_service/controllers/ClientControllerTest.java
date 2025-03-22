@@ -1,6 +1,6 @@
 package com.cs301.client_service.controllers;
 
-import com.cs301.client_service.config.TestSecurityConfig;
+import com.cs301.client_service.configs.TestSecurityConfig;
 import com.cs301.client_service.constants.Gender;
 import com.cs301.client_service.dtos.ClientDTO;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
@@ -29,10 +29,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.test.context.ActiveProfiles;
 
 @WebMvcTest(ClientController.class)
 @Import(TestSecurityConfig.class)
-public class ClientControllerTest {
+@ActiveProfiles("test")
+class ClientControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -50,6 +52,7 @@ public class ClientControllerTest {
     private Client clientModel;
     private String clientId = "client-uuid";
     private String nric = "S1234567A";
+    private String agentId = "agent001";
 
     @BeforeEach
     void setUp() {
@@ -68,6 +71,7 @@ public class ClientControllerTest {
         clientModel.setCountry("Singapore");
         clientModel.setPostalCode("123456");
         clientModel.setNric(nric);
+        clientModel.setAgentId(agentId);
         clientModel.setAccounts(Collections.emptyList());
 
         // Setup client DTO
@@ -85,6 +89,7 @@ public class ClientControllerTest {
         clientDTO.setCountry("Singapore");
         clientDTO.setPostalCode("123456");
         clientDTO.setNric(nric);
+        clientDTO.setAgentId(agentId);
         clientDTO.setAccounts(Collections.emptyList());
     }
 
@@ -130,13 +135,60 @@ public class ClientControllerTest {
     @Test
     void testGetClient_NotFound() throws Exception {
         // Given
-        when(clientService.getClient(anyString())).thenThrow(new ClientNotFoundException("Client not found"));
+        String nonExistentId = "non-existent-id";
+        when(clientService.getClient(anyString())).thenThrow(new ClientNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(get("/api/v1/clients/{clientId}", "non-existent-id"))
+        mockMvc.perform(get("/api/v1/clients/{clientId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
-        verify(clientService, times(1)).getClient("non-existent-id");
+        verify(clientService, times(1)).getClient(nonExistentId);
+        verify(clientMapper, never()).toDto(any(Client.class));
+    }
+    
+    @Test
+    void testGetClientsByAgentId_Success() throws Exception {
+        // Given
+        Client anotherClient = new Client();
+        anotherClient.setClientId("another-uuid");
+        anotherClient.setFirstName("Jane");
+        anotherClient.setAgentId(agentId);
+        
+        ClientDTO anotherClientDTO = new ClientDTO();
+        anotherClientDTO.setClientId("another-uuid");
+        anotherClientDTO.setFirstName("Jane");
+        anotherClientDTO.setAgentId(agentId);
+        
+        when(clientService.getClientsByAgentId(agentId)).thenReturn(java.util.Arrays.asList(clientModel, anotherClient));
+        when(clientMapper.toDto(clientModel)).thenReturn(clientDTO);
+        when(clientMapper.toDto(anotherClient)).thenReturn(anotherClientDTO);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/clients/agent/{agentId}", agentId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].clientId", is(clientId)))
+                .andExpect(jsonPath("$[0].firstName", is("John")))
+                .andExpect(jsonPath("$[0].agentId", is(agentId)))
+                .andExpect(jsonPath("$[1].clientId", is("another-uuid")))
+                .andExpect(jsonPath("$[1].firstName", is("Jane")))
+                .andExpect(jsonPath("$[1].agentId", is(agentId)));
+
+        verify(clientService, times(1)).getClientsByAgentId(agentId);
+        verify(clientMapper, times(2)).toDto(any(Client.class));
+    }
+    
+    @Test
+    void testGetClientsByAgentId_EmptyList() throws Exception {
+        // Given
+        when(clientService.getClientsByAgentId("non-existent-agent")).thenReturn(Collections.emptyList());
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/clients/agent/{agentId}", "non-existent-agent"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+
+        verify(clientService, times(1)).getClientsByAgentId("non-existent-agent");
         verify(clientMapper, never()).toDto(any(Client.class));
     }
 
@@ -163,18 +215,19 @@ public class ClientControllerTest {
     @Test
     void testUpdateClient_NotFound() throws Exception {
         // Given
+        String nonExistentId = "non-existent-id";
         when(clientMapper.toModel(any(ClientDTO.class))).thenReturn(clientModel);
         when(clientService.updateClient(anyString(), any(Client.class)))
-                .thenThrow(new ClientNotFoundException("Client not found"));
+                .thenThrow(new ClientNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(put("/api/v1/clients/{clientId}", "non-existent-id")
+        mockMvc.perform(put("/api/v1/clients/{clientId}", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(clientDTO)))
                 .andExpect(status().isNotFound());
 
         verify(clientMapper, times(1)).toModel(any(ClientDTO.class));
-        verify(clientService, times(1)).updateClient(eq("non-existent-id"), any(Client.class));
+        verify(clientService, times(1)).updateClient(eq(nonExistentId), any(Client.class));
         verify(clientMapper, never()).toDto(any(Client.class));
     }
 
@@ -193,14 +246,15 @@ public class ClientControllerTest {
     @Test
     void testDeleteClient_NotFound() throws Exception {
         // Given
-        doThrow(new ClientNotFoundException("Client not found"))
-                .when(clientService).deleteClient("non-existent-id");
+        String nonExistentId = "non-existent-id";
+        doThrow(new ClientNotFoundException(nonExistentId))
+                .when(clientService).deleteClient(nonExistentId);
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/clients/{clientId}", "non-existent-id"))
+        mockMvc.perform(delete("/api/v1/clients/{clientId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
-        verify(clientService, times(1)).deleteClient("non-existent-id");
+        verify(clientService, times(1)).deleteClient(nonExistentId);
     }
 
     @Test
@@ -243,20 +297,21 @@ public class ClientControllerTest {
     @Test
     void testVerifyClient_ClientNotFound() throws Exception {
         // Given
+        String nonExistentId = "non-existent-id";
         Map<String, String> payload = new HashMap<>();
         payload.put("nric", nric);
 
-        doThrow(new ClientNotFoundException("Client not found"))
-                .when(clientService).verifyClient("non-existent-id", nric);
+        doThrow(new ClientNotFoundException(nonExistentId))
+                .when(clientService).verifyClient(nonExistentId, nric);
 
         // When & Then
-        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", "non-existent-id")
+        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verified", is(false)));
 
-        verify(clientService, times(1)).verifyClient("non-existent-id", nric);
+        verify(clientService, times(1)).verifyClient(nonExistentId, nric);
     }
 
     @Test

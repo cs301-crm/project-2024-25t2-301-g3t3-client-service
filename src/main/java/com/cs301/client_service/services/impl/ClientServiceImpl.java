@@ -9,18 +9,18 @@ import com.cs301.client_service.repositories.ClientRepository;
 import com.cs301.client_service.services.AccountService;
 import com.cs301.client_service.services.ClientService;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ClientServiceImpl implements ClientService {
-
-    @Autowired
-    private ClientRepository clientRepository;
-
-    @Autowired
-    private AccountService accountService;
+    private final ClientRepository clientRepository;
+    private final AccountService accountService;
+    
+    public ClientServiceImpl(ClientRepository clientRepository, AccountService accountService) {
+        this.clientRepository = clientRepository;
+        this.accountService = accountService;
+    }
 
     @Override
     @Transactional
@@ -32,13 +32,19 @@ public class ClientServiceImpl implements ClientService {
     @Transactional(readOnly = true)
     public Client getClient(String clientId) {
         return clientRepository.findById(clientId)
-                .orElseThrow(() -> new ClientNotFoundException("Client not found with ID: " + clientId));
+                .orElseThrow(() -> new ClientNotFoundException(clientId));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Client> getAllClients() {
         return clientRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Client> getClientsByAgentId(String agentId) {
+        return clientRepository.findByAgentId(agentId);
     }
 
     @Override
@@ -67,7 +73,7 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public void verifyClient(String clientId, String nric) {
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ClientNotFoundException("Client not found with ID: " + clientId));
+                .orElseThrow(() -> new ClientNotFoundException(clientId));
 
         if (!client.getNric().equals(nric)) {
             throw new VerificationException("Invalid NRIC provided");
@@ -75,8 +81,8 @@ public class ClientServiceImpl implements ClientService {
     }
 
     private void validateClientOperation(String clientId, String operation) {
-        Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ClientNotFoundException("Client not found with ID: " + clientId));
+        clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFoundException(clientId));
 
         if (operation.equals("delete")) {
             // Check if client has any active accounts before deletion

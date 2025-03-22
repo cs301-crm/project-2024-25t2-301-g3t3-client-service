@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.ToString;
 
 @Entity
 @Data
@@ -77,6 +78,10 @@ public class Client {
     @Column(unique = true)
     private String nric;
 
+    @NotBlank
+    private String agentId;
+
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
+    @ToString.Exclude
     private List<Account> accounts;
 }

@@ -24,13 +24,14 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ClientServiceImplTest {
+class ClientServiceImplTest {
 
     @Mock
     private ClientRepository clientRepository;
@@ -44,6 +45,7 @@ public class ClientServiceImplTest {
     private Client testClient;
     private final String clientId = "client-uuid";
     private final String nric = "S1234567A";
+    private final String agentId = "agent001";
 
     @BeforeEach
     void setUp() {
@@ -62,6 +64,7 @@ public class ClientServiceImplTest {
         testClient.setCountry("Singapore");
         testClient.setPostalCode("123456");
         testClient.setNric(nric);
+        testClient.setAgentId(agentId);
     }
 
     @Nested
@@ -77,9 +80,10 @@ public class ClientServiceImplTest {
             Client result = clientService.createClient(testClient);
 
             // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getClientId()).isEqualTo(clientId);
-            assertThat(result.getFirstName()).isEqualTo("John");
+            assertThat(result)
+                .isNotNull()
+                .extracting(Client::getClientId, Client::getFirstName)
+                .containsExactly(clientId, "John");
             verify(clientRepository, times(1)).save(testClient);
         }
     }
@@ -97,8 +101,10 @@ public class ClientServiceImplTest {
             Client result = clientService.getClient(clientId);
 
             // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getClientId()).isEqualTo(clientId);
+            assertThat(result)
+                .isNotNull()
+                .extracting(Client::getClientId)
+                .isEqualTo(clientId);
             verify(clientRepository, times(1)).findById(clientId);
         }
 
@@ -106,13 +112,17 @@ public class ClientServiceImplTest {
         @DisplayName("Should throw ClientNotFoundException when client not found")
         void testGetClient_NotFound() {
             // Given
+            String nonExistentId = "non-existent-id";
             when(clientRepository.findById(anyString())).thenReturn(Optional.empty());
 
             // When & Then
-            assertThrows(ClientNotFoundException.class, () -> {
-                clientService.getClient("non-existent-id");
+            ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
+                clientService.getClient(nonExistentId);
             });
-            verify(clientRepository, times(1)).findById("non-existent-id");
+            
+            // Verify the exception message contains the ID
+            assertThat(exception.getMessage()).contains(nonExistentId);
+            verify(clientRepository, times(1)).findById(nonExistentId);
         }
     }
 
@@ -133,10 +143,11 @@ public class ClientServiceImplTest {
             List<Client> results = clientService.getAllClients();
 
             // Then
-            assertThat(results).isNotEmpty();
-            assertThat(results).hasSize(2);
-            assertThat(results.get(0).getClientId()).isEqualTo(clientId);
-            assertThat(results.get(1).getClientId()).isEqualTo("another-uuid");
+            assertThat(results)
+                .isNotEmpty()
+                .hasSize(2)
+                .extracting(Client::getClientId)
+                .containsExactly(clientId, "another-uuid");
             verify(clientRepository, times(1)).findAll();
         }
 
@@ -152,6 +163,50 @@ public class ClientServiceImplTest {
             // Then
             assertThat(results).isEmpty();
             verify(clientRepository, times(1)).findAll();
+        }
+    }
+    
+    @Nested
+    @DisplayName("Get Clients By Agent ID Tests")
+    class GetClientsByAgentIdTests {
+        @Test
+        @DisplayName("Should retrieve all clients for a specific agent")
+        void testGetClientsByAgentId_Success() {
+            // Given
+            Client anotherClient = new Client();
+            anotherClient.setClientId("another-uuid");
+            anotherClient.setFirstName("Jane");
+            anotherClient.setAgentId(agentId);
+
+            when(clientRepository.findByAgentId(agentId)).thenReturn(Arrays.asList(testClient, anotherClient));
+
+            // When
+            List<Client> results = clientService.getClientsByAgentId(agentId);
+
+            // Then
+            assertThat(results)
+                .isNotEmpty()
+                .hasSize(2)
+                .extracting(Client::getClientId, Client::getAgentId)
+                .containsExactly(
+                    tuple(clientId, agentId),
+                    tuple("another-uuid", agentId)
+                );
+            verify(clientRepository, times(1)).findByAgentId(agentId);
+        }
+
+        @Test
+        @DisplayName("Should return empty list when no clients exist for the agent")
+        void testGetClientsByAgentId_EmptyList() {
+            // Given
+            when(clientRepository.findByAgentId("non-existent-agent")).thenReturn(Collections.emptyList());
+
+            // When
+            List<Client> results = clientService.getClientsByAgentId("non-existent-agent");
+
+            // Then
+            assertThat(results).isEmpty();
+            verify(clientRepository, times(1)).findByAgentId("non-existent-agent");
         }
     }
 
@@ -175,10 +230,10 @@ public class ClientServiceImplTest {
             Client result = clientService.updateClient(clientId, updatedClient);
 
             // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getClientId()).isEqualTo(clientId);
-            assertThat(result.getFirstName()).isEqualTo("Updated");
-            assertThat(result.getLastName()).isEqualTo("Name");
+            assertThat(result)
+                .isNotNull()
+                .extracting(Client::getClientId, Client::getFirstName, Client::getLastName)
+                .containsExactly(clientId, "Updated", "Name");
             verify(clientRepository, times(1)).findById(clientId);
             verify(clientRepository, times(1)).save(updatedClient);
         }
@@ -187,14 +242,18 @@ public class ClientServiceImplTest {
         @DisplayName("Should throw ClientNotFoundException when updating non-existent client")
         void testUpdateClient_ClientNotFound() {
             // Given
+            String nonExistentId = "non-existent-id";
             when(clientRepository.findById(anyString())).thenReturn(Optional.empty());
 
             // When & Then
             Client clientToUpdate = new Client();
-            assertThrows(ClientNotFoundException.class, () -> {
-                clientService.updateClient("non-existent-id", clientToUpdate);
+            ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
+                clientService.updateClient(nonExistentId, clientToUpdate);
             });
-            verify(clientRepository, times(1)).findById("non-existent-id");
+            
+            // Verify the exception message contains the ID
+            assertThat(exception.getMessage()).contains(nonExistentId);
+            verify(clientRepository, times(1)).findById(nonExistentId);
             verify(clientRepository, never()).save(any(Client.class));
         }
     }
@@ -225,13 +284,17 @@ public class ClientServiceImplTest {
         @DisplayName("Should throw ClientNotFoundException when deleting non-existent client")
         void testDeleteClient_ClientNotFound() {
             // Given
+            String nonExistentId = "non-existent-id";
             when(clientRepository.findById(anyString())).thenReturn(Optional.empty());
 
             // When & Then
-            assertThrows(ClientNotFoundException.class, () -> {
-                clientService.deleteClient("non-existent-id");
+            ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
+                clientService.deleteClient(nonExistentId);
             });
-            verify(clientRepository, times(1)).findById("non-existent-id");
+            
+            // Verify the exception message contains the ID
+            assertThat(exception.getMessage()).contains(nonExistentId);
+            verify(clientRepository, times(1)).findById(nonExistentId);
             verify(accountService, never()).getAccountsByClientId(anyString());
             verify(accountService, never()).deleteAccountsByClientId(anyString());
             verify(clientRepository, never()).deleteById(anyString());
@@ -276,13 +339,17 @@ public class ClientServiceImplTest {
         @DisplayName("Should throw ClientNotFoundException when verifying non-existent client")
         void testVerifyClient_ClientNotFound() {
             // Given
+            String nonExistentId = "non-existent-id";
             when(clientRepository.findById(anyString())).thenReturn(Optional.empty());
 
             // When & Then
-            assertThrows(ClientNotFoundException.class, () -> {
-                clientService.verifyClient("non-existent-id", nric);
+            ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
+                clientService.verifyClient(nonExistentId, nric);
             });
-            verify(clientRepository, times(1)).findById("non-existent-id");
+            
+            // Verify the exception message contains the ID
+            assertThat(exception.getMessage()).contains(nonExistentId);
+            verify(clientRepository, times(1)).findById(nonExistentId);
         }
 
         @Test

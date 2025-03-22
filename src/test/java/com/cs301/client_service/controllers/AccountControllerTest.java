@@ -1,10 +1,11 @@
 package com.cs301.client_service.controllers;
 
-import com.cs301.client_service.config.TestSecurityConfig;
+import com.cs301.client_service.configs.TestSecurityConfig;
 import com.cs301.client_service.constants.AccountStatus;
 import com.cs301.client_service.constants.AccountType;
 import com.cs301.client_service.dtos.AccountDTO;
 import com.cs301.client_service.exceptions.AccountNotFoundException;
+import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.mappers.AccountMapper;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
@@ -21,6 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,10 +31,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.test.context.ActiveProfiles;
 
 @WebMvcTest(AccountController.class)
 @Import(TestSecurityConfig.class)
-public class AccountControllerTest {
+@ActiveProfiles("test")
+class AccountControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -120,13 +125,14 @@ public class AccountControllerTest {
     @Test
     void testGetAccount_NotFound() throws Exception {
         // Given
-        when(accountService.getAccount(anyString())).thenThrow(new AccountNotFoundException("Account not found"));
+        String nonExistentId = "non-existent-id";
+        when(accountService.getAccount(anyString())).thenThrow(new AccountNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(get("/api/v1/accounts/{accountId}", "non-existent-id"))
+        mockMvc.perform(get("/api/v1/accounts/{accountId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
-        verify(accountService, times(1)).getAccount("non-existent-id");
+        verify(accountService, times(1)).getAccount(nonExistentId);
         verify(accountMapper, never()).toDto(any(Account.class));
     }
 
@@ -153,18 +159,19 @@ public class AccountControllerTest {
     @Test
     void testUpdateAccount_NotFound() throws Exception {
         // Given
+        String nonExistentId = "non-existent-id";
         when(accountMapper.toModel(any(AccountDTO.class))).thenReturn(accountModel);
         when(accountService.updateAccount(anyString(), any(Account.class)))
-                .thenThrow(new AccountNotFoundException("Account not found"));
+                .thenThrow(new AccountNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(put("/api/v1/accounts/{accountId}", "non-existent-id")
+        mockMvc.perform(put("/api/v1/accounts/{accountId}", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(accountDTO)))
                 .andExpect(status().isNotFound());
 
         verify(accountMapper, times(1)).toModel(any(AccountDTO.class));
-        verify(accountService, times(1)).updateAccount(eq("non-existent-id"), any(Account.class));
+        verify(accountService, times(1)).updateAccount(eq(nonExistentId), any(Account.class));
         verify(accountMapper, never()).toDto(any(Account.class));
     }
 
@@ -183,13 +190,50 @@ public class AccountControllerTest {
     @Test
     void testDeleteAccount_NotFound() throws Exception {
         // Given
-        doThrow(new AccountNotFoundException("Account not found"))
-                .when(accountService).deleteAccount("non-existent-id");
+        String nonExistentId = "non-existent-id";
+        doThrow(new AccountNotFoundException(nonExistentId))
+                .when(accountService).deleteAccount(nonExistentId);
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/accounts/{accountId}", "non-existent-id"))
+        mockMvc.perform(delete("/api/v1/accounts/{accountId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
-        verify(accountService, times(1)).deleteAccount("non-existent-id");
+        verify(accountService, times(1)).deleteAccount(nonExistentId);
+    }
+    
+    @Test
+    void testGetAccountsByClientId_Success() throws Exception {
+        // Given
+        List<Account> accounts = Arrays.asList(accountModel);
+        List<AccountDTO> accountDTOs = Arrays.asList(accountDTO);
+        
+        when(accountService.getAccountsByClientId(clientId)).thenReturn(accounts);
+        when(accountMapper.toDtoList(accounts)).thenReturn(accountDTOs);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/accounts/client/{clientId}", clientId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].accountId", is(accountId)))
+                .andExpect(jsonPath("$[0].clientId", is(clientId)))
+                .andExpect(jsonPath("$[0].accountType", is(AccountType.SAVINGS.toString())))
+                .andExpect(jsonPath("$[0].currency", is("SGD")));
+
+        verify(accountService, times(1)).getAccountsByClientId(clientId);
+        verify(accountMapper, times(1)).toDtoList(accounts);
+    }
+
+    @Test
+    void testGetAccountsByClientId_ClientNotFound() throws Exception {
+        // Given
+        String nonExistentClient = "non-existent-client";
+        when(accountService.getAccountsByClientId(nonExistentClient))
+                .thenThrow(new ClientNotFoundException(nonExistentClient));
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/accounts/client/{clientId}", nonExistentClient))
+                .andExpect(status().isNotFound());
+
+        verify(accountService, times(1)).getAccountsByClientId(nonExistentClient);
+        verify(accountMapper, never()).toDtoList(any());
     }
 }

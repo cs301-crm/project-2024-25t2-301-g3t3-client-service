@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import java.time.LocalDate;
@@ -14,7 +15,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-public class ClientRepositoryTest {
+@ActiveProfiles("test")
+class ClientRepositoryTest {
 
     @Autowired
     private TestEntityManager entityManager;
@@ -40,6 +42,7 @@ public class ClientRepositoryTest {
         testClient.setCountry("Singapore");
         testClient.setPostalCode("123456");
         testClient.setNric("S1234567A");
+        testClient.setAgentId("agent001");
 
         // Persist the client
         entityManager.persist(testClient);
@@ -97,6 +100,61 @@ public class ClientRepositoryTest {
         Optional<Client> retrievedClient = clientRepository.findById(savedClient.getClientId());
         assertThat(retrievedClient).isPresent();
         assertThat(retrievedClient.get().getEmailAddress()).isEqualTo("jane.smith@example.com");
+    }
+
+    @Test
+    void testFindByAgentId() {
+        // Given: another client with the same agent ID
+        Client anotherClient = new Client();
+        anotherClient.setFirstName("Jane");
+        anotherClient.setLastName("Smith");
+        anotherClient.setDateOfBirth(LocalDate.of(1992, 2, 2));
+        anotherClient.setGender(Gender.FEMALE);
+        anotherClient.setEmailAddress("jane.smith@example.com");
+        anotherClient.setPhoneNumber("0987654321");
+        anotherClient.setAddress("456 Side St");
+        anotherClient.setCity("Singapore");
+        anotherClient.setState("Singapore");
+        anotherClient.setCountry("Singapore");
+        anotherClient.setPostalCode("654321");
+        anotherClient.setNric("S7654321A");
+        anotherClient.setAgentId("agent001"); // Same agent ID as testClient
+        
+        entityManager.persist(anotherClient);
+        
+        // And: a client with a different agent ID
+        Client differentAgentClient = new Client();
+        differentAgentClient.setFirstName("Michael");
+        differentAgentClient.setLastName("Wong");
+        differentAgentClient.setDateOfBirth(LocalDate.of(1985, 5, 5));
+        differentAgentClient.setGender(Gender.MALE);
+        differentAgentClient.setEmailAddress("michael.wong@example.com");
+        differentAgentClient.setPhoneNumber("5555555555");
+        differentAgentClient.setAddress("789 Other St");
+        differentAgentClient.setCity("Singapore");
+        differentAgentClient.setState("Singapore");
+        differentAgentClient.setCountry("Singapore");
+        differentAgentClient.setPostalCode("789012");
+        differentAgentClient.setNric("S9876543B");
+        differentAgentClient.setAgentId("agent002"); // Different agent ID
+        
+        entityManager.persist(differentAgentClient);
+        entityManager.flush();
+        
+        // When: finding clients by agent ID
+        var clientsForAgent001 = clientRepository.findByAgentId("agent001");
+        var clientsForAgent002 = clientRepository.findByAgentId("agent002");
+        var clientsForNonExistentAgent = clientRepository.findByAgentId("non-existent-agent");
+        
+        // Then: the correct clients should be found
+        assertThat(clientsForAgent001).hasSize(2);
+        assertThat(clientsForAgent001.stream().map(Client::getFirstName))
+            .containsExactlyInAnyOrder("John", "Jane");
+            
+        assertThat(clientsForAgent002).hasSize(1);
+        assertThat(clientsForAgent002.get(0).getFirstName()).isEqualTo("Michael");
+        
+        assertThat(clientsForNonExistentAgent).isEmpty();
     }
 
     @Test
