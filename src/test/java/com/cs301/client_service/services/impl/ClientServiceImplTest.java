@@ -6,6 +6,9 @@ import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
+import com.cs301.client_service.producers.KafkaProducer;
+import com.cs301.client_service.protobuf.C2C;
+import com.cs301.client_service.protobuf.CRUDInfo;
 import com.cs301.client_service.repositories.ClientRepository;
 import com.cs301.client_service.services.AccountService;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,6 +42,9 @@ class ClientServiceImplTest {
 
     @Mock
     private AccountService accountService;
+    
+    @Mock
+    private KafkaProducer kafkaProducer;
 
     @InjectMocks
     private ClientServiceImpl clientService;
@@ -223,7 +230,9 @@ class ClientServiceImplTest {
             updatedClient.setClientId(clientId);
             updatedClient.setFirstName("Updated");
             updatedClient.setLastName("Name");
-
+            updatedClient.setEmailAddress("updated.email@example.com");
+            
+            doNothing().when(kafkaProducer).produceMessage(anyString(), any(), anyBoolean());
             when(clientRepository.save(any(Client.class))).thenReturn(updatedClient);
 
             // When
@@ -236,6 +245,71 @@ class ClientServiceImplTest {
                 .containsExactly(clientId, "Updated", "Name");
             verify(clientRepository, times(1)).findById(clientId);
             verify(clientRepository, times(1)).save(updatedClient);
+            verify(kafkaProducer, times(1)).produceMessage(eq(clientId), any(C2C.class), eq(true));
+        }
+        
+        @Test
+        @DisplayName("Should send Kafka message when updating a client")
+        void testUpdateClient_SendsKafkaMessage() {
+            // Given
+            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+
+            Client updatedClient = new Client();
+            updatedClient.setClientId(clientId);
+            updatedClient.setFirstName("Updated");
+            updatedClient.setLastName("Name");
+            updatedClient.setEmailAddress("updated.email@example.com");
+            updatedClient.setPhoneNumber("9876543210");
+            updatedClient.setAddress("456 Updated St");
+            updatedClient.setCity("Updated City");
+            updatedClient.setState("Updated State");
+            updatedClient.setCountry("Updated Country");
+            updatedClient.setPostalCode("654321");
+            updatedClient.setNric(nric);
+            updatedClient.setAgentId(agentId);
+            
+            // Capture the Kafka message
+            ArgumentCaptor<Object> messageCaptor = ArgumentCaptor.forClass(Object.class);
+            doNothing().when(kafkaProducer).produceMessage(anyString(), messageCaptor.capture(), anyBoolean());
+            
+            when(clientRepository.save(any(Client.class))).thenReturn(updatedClient);
+
+            // When
+            clientService.updateClient(clientId, updatedClient);
+
+            // Then
+            verify(kafkaProducer, times(1)).produceMessage(eq(clientId), any(C2C.class), eq(true));
+            
+            // Verify the Kafka message content
+            Object capturedMessage = messageCaptor.getValue();
+            assertThat(capturedMessage).isInstanceOf(C2C.class);
+            
+            C2C c2c = (C2C) capturedMessage;
+            assertThat(c2c.getClientId()).isEqualTo(clientId);
+            assertThat(c2c.getClientEmail()).isEqualTo(updatedClient.getEmailAddress());
+            assertThat(c2c.getCrudType()).isEqualTo("UPDATE");
+            
+            // Verify CRUDInfo is present and contains data
+            assertThat(c2c.hasCrudInfo()).isTrue();
+            CRUDInfo crudInfo = c2c.getCrudInfo();
+            assertThat(crudInfo.getAttribute()).isNotEmpty();
+            assertThat(crudInfo.getBeforeValue()).isNotEmpty();
+            assertThat(crudInfo.getAfterValue()).isNotEmpty();
+            
+            // Verify that the attribute names include the changed fields
+            String attributes = crudInfo.getAttribute();
+            assertThat(attributes).contains("firstName");
+            assertThat(attributes).contains("lastName");
+            assertThat(attributes).contains("emailAddress");
+            assertThat(attributes).contains("phoneNumber");
+            assertThat(attributes).contains("address");
+            assertThat(attributes).contains("city");
+            assertThat(attributes).contains("state");
+            assertThat(attributes).contains("country");
+            assertThat(attributes).contains("postalCode");
+            
+            // Verify that clientId is NOT included in the changes
+            assertThat(attributes).doesNotContain("clientId");
         }
 
         @Test
@@ -269,6 +343,7 @@ class ClientServiceImplTest {
             when(accountService.getAccountsByClientId(clientId)).thenReturn(Collections.emptyList());
             doNothing().when(accountService).deleteAccountsByClientId(clientId);
             doNothing().when(clientRepository).deleteById(clientId);
+            doNothing().when(kafkaProducer).produceMessage(anyString(), any(), anyBoolean());
 
             // When
             clientService.deleteClient(clientId);
@@ -278,6 +353,36 @@ class ClientServiceImplTest {
             verify(accountService, times(1)).getAccountsByClientId(clientId);
             verify(accountService, times(1)).deleteAccountsByClientId(clientId);
             verify(clientRepository, times(1)).deleteById(clientId);
+            verify(kafkaProducer, times(1)).produceMessage(eq(clientId), any(C2C.class), eq(true));
+        }
+        
+        @Test
+        @DisplayName("Should send Kafka message when deleting a client")
+        void testDeleteClient_SendsKafkaMessage() {
+            // Given
+            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+            when(accountService.getAccountsByClientId(clientId)).thenReturn(Collections.emptyList());
+            doNothing().when(accountService).deleteAccountsByClientId(clientId);
+            doNothing().when(clientRepository).deleteById(clientId);
+            
+            // Capture the Kafka message
+            ArgumentCaptor<Object> messageCaptor = ArgumentCaptor.forClass(Object.class);
+            doNothing().when(kafkaProducer).produceMessage(anyString(), messageCaptor.capture(), anyBoolean());
+
+            // When
+            clientService.deleteClient(clientId);
+
+            // Then
+            verify(kafkaProducer, times(1)).produceMessage(eq(clientId), any(C2C.class), eq(true));
+            
+            // Verify the Kafka message content
+            Object capturedMessage = messageCaptor.getValue();
+            assertThat(capturedMessage).isInstanceOf(C2C.class);
+            
+            C2C c2c = (C2C) capturedMessage;
+            assertThat(c2c.getClientId()).isEqualTo(clientId);
+            assertThat(c2c.getClientEmail()).isEqualTo(testClient.getEmailAddress());
+            assertThat(c2c.getCrudType()).isEqualTo("DELETE");
         }
 
         @Test
