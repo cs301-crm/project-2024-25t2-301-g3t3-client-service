@@ -78,23 +78,28 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
     /**
      * Log an update operation
      * Only logs if the API call was successful
+     * 
+     * Format:
+     * - attributeName: pipe-separated attribute names (e.g., "firstName|address")
+     * - beforeValue: pipe-separated values (e.g., "LEE|ABC")
+     * - afterValue: pipe-separated values (e.g., "TAN|XX")
      */
     protected void logUpdateOperation(Object oldEntity, Object newEntity, String clientId, Map<String, Map.Entry<String, String>> changes) {
         try {
             // Check if newEntity is not null, indicating a successful operation
             if (newEntity != null && changes != null && !changes.isEmpty()) {
-                // Create a consolidated string of all attribute names
+                // Create a consolidated string of all attribute names with pipe separator
                 StringBuilder attributeNames = new StringBuilder();
-                // Create consolidated strings for before and after values
+                // Create consolidated strings for before and after values with pipe separator
                 StringBuilder beforeValues = new StringBuilder();
                 StringBuilder afterValues = new StringBuilder();
                 
                 boolean first = true;
                 for (Map.Entry<String, Map.Entry<String, String>> change : changes.entrySet()) {
                     if (!first) {
-                        attributeNames.append(", ");
-                        beforeValues.append(", ");
-                        afterValues.append(", ");
+                        attributeNames.append("|");
+                        beforeValues.append("|");
+                        afterValues.append("|");
                     }
                     
                     String attrName = change.getKey();
@@ -102,8 +107,8 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
                     String afterValue = change.getValue().getValue();
                     
                     attributeNames.append(attrName);
-                    beforeValues.append(attrName).append(": ").append(beforeValue);
-                    afterValues.append(attrName).append(": ").append(afterValue);
+                    beforeValues.append(beforeValue);
+                    afterValues.append(afterValue);
                     
                     first = false;
                 }

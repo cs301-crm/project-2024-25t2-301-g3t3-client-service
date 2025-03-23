@@ -18,10 +18,25 @@ public abstract class BaseLoggingAspect {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     
     /**
-     * Create a log entry for a create operation
+     * Create a log entry for a CRUD operation
+     * 
+     * For CREATE, READ, DELETE operations:
+     * - attributeName: clientId
+     * - beforeValue/afterValue: as provided
+     * 
+     * For UPDATE operations:
+     * - attributeName: pipe-separated attribute names (e.g., "firstName|address")
+     * - beforeValue: pipe-separated values (e.g., "LEE|ABC")
+     * - afterValue: pipe-separated values (e.g., "TAN|XX")
      */
     protected Log createLogEntry(String clientId, Object entity, Log.CrudType crudType, 
                                String attributeName, String beforeValue, String afterValue) {
+        // For CREATE, READ, DELETE operations, store clientId in attributeName if not provided
+        if ((crudType == Log.CrudType.CREATE || crudType == Log.CrudType.READ || crudType == Log.CrudType.DELETE) 
+                && (attributeName == null || attributeName.isEmpty())) {
+            attributeName = clientId;
+        }
+        
         return Log.builder()
                 .crudType(crudType)
                 .attributeName(attributeName)
