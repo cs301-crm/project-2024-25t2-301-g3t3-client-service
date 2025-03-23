@@ -84,11 +84,20 @@ sourceSets {
     }
 }
 
-// Task to run the Kafka consumer test
-task runConsumer(type: JavaExec) {
-    description = 'Runs the Kafka consumer test'
+// Task to run the A2C Kafka consumer
+task runA2CConsumer(type: JavaExec) {
+    description = 'Runs the A2C Kafka consumer'
     group = 'application'
     
     classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.cs301.client_service.kafka.KafkaConsumerTest'
+    mainClass = 'com.cs301.client_service.kafka.TestA2CConsumer'
+}
+
+// Task to run the C2C Kafka consumer
+task runC2CConsumer(type: JavaExec) {
+    description = 'Runs the C2C Kafka consumer'
+    group = 'application'
+    
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.cs301.client_service.kafka.TestC2CConsumer'
 }
