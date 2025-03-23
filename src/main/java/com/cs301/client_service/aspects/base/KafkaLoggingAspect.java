@@ -3,9 +3,11 @@ package com.cs301.client_service.aspects.base;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
 import com.cs301.client_service.producers.KafkaProducer;
+import com.cs301.client_service.protobuf.A2C;
 import com.cs301.client_service.protobuf.C2C;
 import com.cs301.client_service.protobuf.CRUDInfo;
 import com.cs301.client_service.utils.LoggingUtils;
+import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 
@@ -22,17 +24,131 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
     protected KafkaProducer kafkaProducer;
     
     /**
+     * Get the entity ID from the entity
+     */
+    protected abstract String getEntityId(Object entity);
+
+    /**
+     * Get the client ID from the entity
+     */
+    protected abstract String getClientId(Object entity);
+
+    /**
+     * Get the client email from the entity
+     */
+    protected abstract String getClientEmail(Object entity);
+
+    /**
+     * Get the entity type name (e.g., "Client", "Account")
+     */
+    protected abstract String getEntityType();
+    
+    /**
+     * Get attribute names for an entity
+     */
+    protected abstract String getAttributeNames(Object entity);
+    
+    /**
+     * Get entity values as a string
+     */
+    protected abstract String getEntityValues(Object entity);
+    
+    /**
+     * Log after entity creation to Kafka
+     */
+    protected void logAfterCreationToKafka(JoinPoint joinPoint, Object result) {
+        try {
+            if (result == null) {
+                logger.warn("{} is null for {} creation", getEntityType(), getEntityType().toLowerCase());
+                return;
+            }
+            
+            String clientId = getClientId(result);
+            String clientEmail = getClientEmail(result);
+            
+            if (result instanceof Account) {
+                // Use A2C format for accounts
+                logAccountOperationToKafka((Account) result, clientId, clientEmail, "CREATE");
+            } else {
+                // Use C2C format for other entities
+                logCreateOperationToKafka(result, clientId, clientEmail);
+            }
+            
+            logger.debug("Published creation event to Kafka for {} with ID: {}", 
+                        getEntityType(), getEntityId(result));
+        } catch (Exception e) {
+            logger.error("Error publishing {} creation to Kafka", getEntityType().toLowerCase(), e);
+        }
+    }
+
+    /**
+     * Log after entity update to Kafka
+     */
+    protected void logAfterUpdateToKafka(JoinPoint joinPoint, Object result, Map<String, Map.Entry<String, String>> changes) {
+        try {
+            if (result == null) {
+                logger.warn("{} is null for {} update", getEntityType(), getEntityType().toLowerCase());
+                return;
+            }
+            
+            String clientId = getClientId(result);
+            String clientEmail = getClientEmail(result);
+            
+            if (result instanceof Account) {
+                // Use A2C format for accounts
+                logAccountOperationToKafka((Account) result, clientId, clientEmail, "UPDATE");
+            } else {
+                // For other entities, use C2C format with changes
+                logUpdateOperationToKafka(null, result, clientId, clientEmail, changes);
+            }
+            
+            logger.debug("Published update event to Kafka for {} with ID: {}", 
+                        getEntityType(), getEntityId(result));
+        } catch (Exception e) {
+            logger.error("Error publishing {} update to Kafka", getEntityType().toLowerCase(), e);
+        }
+    }
+
+    /**
+     * Log after entity deletion to Kafka
+     */
+    protected void logAfterDeletionToKafka(String entityId, String clientId, String clientEmail) {
+        try {
+            // For accounts, we would need the account object to use A2C format
+            // For now, we'll use C2C format for all entities
+            
+            // Create an empty entity for deletion
+            Object entity = null;
+            if (getEntityType().equals("Client")) {
+                Client client = new Client();
+                client.setClientId(clientId);
+                entity = client;
+            } else if (getEntityType().equals("Account")) {
+                // For accounts, we would need more information to create a proper Account object
+                // This is typically handled in the concrete aspect classes
+            }
+            
+            if (entity != null) {
+                logDeleteOperationToKafka(entity, clientId, clientEmail);
+                logger.debug("Published deletion event to Kafka for {} with ID: {}", 
+                            getEntityType(), entityId);
+            }
+        } catch (Exception e) {
+            logger.error("Error publishing {} deletion to Kafka", getEntityType().toLowerCase(), e);
+        }
+    }
+    
+    /**
      * Log a create operation to Kafka
      */
     protected void logCreateOperationToKafka(Object entity, String clientId, String email) {
         try {
             logger.debug("Publishing creation event to Kafka for entity with client ID: {}", clientId);
             
-            CRUDInfo crudInfo = CRUDInfo.newBuilder()
-                    .setAttribute(getAttributeNames(entity))
-                    .setBeforeValue("")
-                    .setAfterValue(getEntityValues(entity))
-                    .build();
+            String entityId = getMessageKey(entity);
+            
+            // Create an empty CRUDInfo
+            CRUDInfo crudInfo = CRUDInfo.newBuilder().build();
             
             C2C c2c = C2C.newBuilder()
                     .setAgentId(LoggingUtils.getCurrentAgentId())
@@ -43,7 +159,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
                     .build();
             
             // Pass true to indicate successful operation
-            kafkaProducer.produceMessage(getMessageKey(entity), c2c, true);
+            kafkaProducer.produceMessage(entityId, c2c, true);
         } catch (Exception e) {
             logException("Kafka create", e);
         }
@@ -112,11 +228,10 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
         try {
             logger.debug("Publishing deletion event to Kafka for entity with client ID: {}", clientId);
             
-            CRUDInfo crudInfo = CRUDInfo.newBuilder()
-                    .setAttribute(getAttributeNames(entity))
-                    .setBeforeValue(getEntityValues(entity))
-                    .setAfterValue("")
-                    .build();
+            String entityId = getMessageKey(entity);
+            
+            // Create an empty CRUDInfo
+            CRUDInfo crudInfo = CRUDInfo.newBuilder().build();
             
             C2C c2c = C2C.newBuilder()
                     .setAgentId(LoggingUtils.getCurrentAgentId())
@@ -127,49 +242,37 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
                     .build();
             
             // Pass true to indicate successful operation
-            kafkaProducer.produceMessage(getMessageKey(entity), c2c, true);
+            kafkaProducer.produceMessage(entityId, c2c, true);
         } catch (Exception e) {
             logException("Kafka delete", e);
         }
     }
     
     /**
-     * Log a verification operation to Kafka
+     * Log an account operation to Kafka using A2C format
      */
-    protected void logVerificationOperationToKafka(String clientId, String email) {
+    protected void logAccountOperationToKafka(Account account, String clientId, String email, String crudType) {
         try {
-            logger.debug("Publishing verification event to Kafka for client ID: {}", clientId);
+            logger.debug("Publishing {} event to Kafka for account with client ID: {}", crudType, clientId);
             
-            CRUDInfo crudInfo = CRUDInfo.newBuilder()
-                    .setAttribute("verificationStatus")
-                    .setBeforeValue("PENDING")
-                    .setAfterValue("VERIFIED")
-                    .build();
+            String accountId = account.getAccountId();
+            String accountType = account.getAccountType() != null ? account.getAccountType().toString() : "";
             
-            C2C c2c = C2C.newBuilder()
+            A2C a2c = A2C.newBuilder()
                     .setAgentId(LoggingUtils.getCurrentAgentId())
                     .setClientId(clientId)
                     .setClientEmail(email)
-                    .setCrudType("UPDATE")
-                    .setCrudInfo(crudInfo)
+                    .setCrudType(crudType)
+                    .setAccountId(accountId)
+                    .setAccountType(accountType)
                     .build();
             
             // Pass true to indicate successful operation
-            kafkaProducer.produceMessage(clientId, c2c, true);
+            kafkaProducer.produceA2CMessage(accountId, a2c, true);
         } catch (Exception e) {
-            logException("Kafka verification", e);
+            logger.error("Error logging account {} to Kafka: {}", crudType.toLowerCase(), e.getMessage(), e);
         }
     }
-    
-    /**
-     * Get attribute names for an entity
-     */
-    protected abstract String getAttributeNames(Object entity);
-    
-    /**
-     * Get entity values as a string
-     */
-    protected abstract String getEntityValues(Object entity);
     
     /**
      * Get message key for Kafka
@@ -195,19 +298,6 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
             return ((Account) entity).getClient().getClientId();
         } else {
             return "UNKNOWN";
-        }
-    }
-    
-    /**
-     * Extract email from an entity
-     */
-    protected String extractEmail(Object entity) {
-        if (entity instanceof Client) {
-            return ((Client) entity).getEmailAddress();
-        } else if (entity instanceof Account) {
-            return ((Account) entity).getClient().getEmailAddress();
-        } else {
-            return "";
         }
     }
 }
