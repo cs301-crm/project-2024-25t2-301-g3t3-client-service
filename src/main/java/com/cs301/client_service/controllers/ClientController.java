@@ -81,7 +81,13 @@ public class ClientController {
      */
     @PostMapping("/{clientId}/verify")
     public ResponseEntity<Map<String, Boolean>> verifyClient(@PathVariable String clientId) {
-        clientService.verifyClient(clientId);
-        return ResponseEntity.ok(Map.of(VERIFIED, true));
+        try {
+            clientService.verifyClient(clientId);
+            return ResponseEntity.ok(Map.of(VERIFIED, true));
+        } catch (ClientNotFoundException ex) {
+            // Return a consistent response format for the not found case
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(VERIFIED, false));
+        }
     }
 }
