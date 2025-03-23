@@ -30,6 +30,8 @@ public class LoggingUtils {
             objectMapper = new ObjectMapper();
             // Configure the mapper for proper date handling
             objectMapper.findAndRegisterModules();
+            // Configure to handle circular references
+            objectMapper.configure(com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         }
         return objectMapper;
     }
@@ -92,6 +94,50 @@ public class LoggingUtils {
         }
         
         try {
+            if (entity instanceof Account) {
+                Account account = (Account) entity;
+                // Create a simplified representation to avoid circular references
+                Map<String, Object> accountMap = new HashMap<>();
+                accountMap.put("accountId", account.getAccountId());
+                accountMap.put("accountType", account.getAccountType());
+                accountMap.put("accountStatus", account.getAccountStatus());
+                accountMap.put("openingDate", account.getOpeningDate());
+                accountMap.put("initialDeposit", account.getInitialDeposit());
+                accountMap.put("currency", account.getCurrency());
+                accountMap.put("branchId", account.getBranchId());
+                
+                // Include client ID but not the full client object
+                if (account.getClient() != null) {
+                    accountMap.put("clientId", account.getClient().getClientId());
+                }
+                
+                return getObjectMapper().writeValueAsString(accountMap);
+            } else if (entity instanceof Client) {
+                Client client = (Client) entity;
+                // Create a simplified representation to avoid circular references
+                Map<String, Object> clientMap = new HashMap<>();
+                clientMap.put("clientId", client.getClientId());
+                clientMap.put("firstName", client.getFirstName());
+                clientMap.put("lastName", client.getLastName());
+                clientMap.put("dateOfBirth", client.getDateOfBirth());
+                clientMap.put("gender", client.getGender());
+                clientMap.put("emailAddress", client.getEmailAddress());
+                clientMap.put("phoneNumber", client.getPhoneNumber());
+                clientMap.put("address", client.getAddress());
+                clientMap.put("city", client.getCity());
+                clientMap.put("state", client.getState());
+                clientMap.put("country", client.getCountry());
+                clientMap.put("postalCode", client.getPostalCode());
+                clientMap.put("nric", client.getNric());
+                clientMap.put("agentId", client.getAgentId());
+                clientMap.put("verificationStatus", client.getVerificationStatus());
+                
+                // Don't include accounts to avoid circular references
+                
+                return getObjectMapper().writeValueAsString(clientMap);
+            }
+            
+            // For other types, use the default serialization
             return getObjectMapper().writeValueAsString(entity);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error converting entity to string", e);
