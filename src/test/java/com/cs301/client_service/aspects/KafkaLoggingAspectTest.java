@@ -83,53 +83,23 @@ public class KafkaLoggingAspectTest {
         assertEquals(testClient.getClientId(), capturedC2C.getClientId());
         assertEquals(testClient.getEmailAddress(), capturedC2C.getClientEmail());
         assertEquals("CREATE", capturedC2C.getCrudType());
-        assertEquals("clientId,firstName,lastName,dateOfBirth,gender,emailAddress,phoneNumber,address,city,state,country,postalCode,nric,agentId", capturedC2C.getCrudInfo().getAttribute());
+        // For CREATE operations, CRUDInfo should be empty
+        assertEquals("", capturedC2C.getCrudInfo().getAttribute());
+        assertEquals("", capturedC2C.getCrudInfo().getBeforeValue());
+        assertEquals("", capturedC2C.getCrudInfo().getAfterValue());
     }
 
     @Test
+    @Disabled("Client update aspect is now disabled")
     void testLogAfterClientUpdate() {
-        // Arrange
-        Client updatedClient = testClient.toBuilder()
-                .firstName("Jane")
-                .lastName("Smith")
-                .build();
-        
-        when(clientRepository.findById(testClient.getClientId()))
-                .thenReturn(Optional.of(testClient));
-        doNothing().when(kafkaProducer).produceMessage(anyString(), any(), anyBoolean());
-
-        // Act
-        Object[] args = new Object[] { testClient.getClientId(), updatedClient };
-        org.aspectj.lang.JoinPoint joinPoint = mock(org.aspectj.lang.JoinPoint.class);
-        when(joinPoint.getArgs()).thenReturn(args);
-        kafkaLoggingAspect.logAfterClientUpdate(joinPoint, updatedClient);
-
-        // Assert
-        verify(kafkaProducer).produceMessage(eq(testClient.getClientId()), c2cCaptor.capture(), eq(true));
-        C2C capturedC2C = (C2C) c2cCaptor.getValue();
-        
-        assertEquals(testClient.getEmailAddress(), capturedC2C.getClientEmail());
-        assertEquals("UPDATE", capturedC2C.getCrudType());
+        // This test is disabled because the client update aspect is now disabled
+        // The Kafka message is now sent directly in the service method
     }
 
     @Test
+    @Disabled("Client deletion aspect is now disabled")
     void testLogAfterClientDeletion() {
-        // Arrange
-        when(clientRepository.findById(testClient.getClientId()))
-                .thenReturn(Optional.of(testClient));
-        doNothing().when(kafkaProducer).produceMessage(anyString(), any(), anyBoolean());
-
-        // Act
-        Object[] args = new Object[] { testClient.getClientId() };
-        org.aspectj.lang.JoinPoint joinPoint = mock(org.aspectj.lang.JoinPoint.class);
-        when(joinPoint.getArgs()).thenReturn(args);
-        kafkaLoggingAspect.logAfterClientDeletion(joinPoint);
-
-        // Assert
-        verify(kafkaProducer).produceMessage(eq(testClient.getClientId()), c2cCaptor.capture(), eq(true));
-        C2C capturedC2C = (C2C) c2cCaptor.getValue();
-        
-        assertEquals(testClient.getEmailAddress(), capturedC2C.getClientEmail());
-        assertEquals("DELETE", capturedC2C.getCrudType());
+        // This test is disabled because the client deletion aspect is now disabled
+        // The Kafka message is now sent directly in the service method
     }
 }
