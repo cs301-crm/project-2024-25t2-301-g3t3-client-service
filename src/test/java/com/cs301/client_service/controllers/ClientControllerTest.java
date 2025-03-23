@@ -7,6 +7,7 @@ import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.mappers.ClientMapper;
 import com.cs301.client_service.models.Client;
+import com.cs301.client_service.producers.KafkaProducer;
 import com.cs301.client_service.services.impl.ClientServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,9 @@ class ClientControllerTest {
 
     @MockBean
     private ClientMapper clientMapper;
+    
+    @MockBean
+    private KafkaProducer kafkaProducer;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -101,7 +105,7 @@ class ClientControllerTest {
         when(clientMapper.toDto(any(Client.class))).thenReturn(clientDTO);
 
         // When & Then
-        mockMvc.perform(post("/api/v1/clients")
+        mockMvc.perform(post("/api/clients")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(clientDTO)))
                 .andExpect(status().isCreated())
@@ -122,7 +126,7 @@ class ClientControllerTest {
         when(clientMapper.toDto(any(Client.class))).thenReturn(clientDTO);
 
         // When & Then
-        mockMvc.perform(get("/api/v1/clients/{clientId}", clientId))
+        mockMvc.perform(get("/api/clients/{clientId}", clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.clientId", is(clientId)))
                 .andExpect(jsonPath("$.firstName", is("John")))
@@ -139,7 +143,7 @@ class ClientControllerTest {
         when(clientService.getClient(anyString())).thenThrow(new ClientNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(get("/api/v1/clients/{clientId}", nonExistentId))
+        mockMvc.perform(get("/api/clients/{clientId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
         verify(clientService, times(1)).getClient(nonExistentId);
@@ -164,7 +168,7 @@ class ClientControllerTest {
         when(clientMapper.toDto(anotherClient)).thenReturn(anotherClientDTO);
 
         // When & Then
-        mockMvc.perform(get("/api/v1/clients/agent/{agentId}", agentId))
+        mockMvc.perform(get("/api/clients/agent/{agentId}", agentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].clientId", is(clientId)))
                 .andExpect(jsonPath("$[0].firstName", is("John")))
@@ -183,7 +187,7 @@ class ClientControllerTest {
         when(clientService.getClientsByAgentId("non-existent-agent")).thenReturn(Collections.emptyList());
 
         // When & Then
-        mockMvc.perform(get("/api/v1/clients/agent/{agentId}", "non-existent-agent"))
+        mockMvc.perform(get("/api/clients/agent/{agentId}", "non-existent-agent"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
@@ -200,7 +204,7 @@ class ClientControllerTest {
         when(clientMapper.toDto(any(Client.class))).thenReturn(clientDTO);
 
         // When & Then
-        mockMvc.perform(put("/api/v1/clients/{clientId}", clientId)
+        mockMvc.perform(put("/api/clients/{clientId}", clientId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(clientDTO)))
                 .andExpect(status().isOk())
@@ -221,7 +225,7 @@ class ClientControllerTest {
                 .thenThrow(new ClientNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(put("/api/v1/clients/{clientId}", nonExistentId)
+        mockMvc.perform(put("/api/clients/{clientId}", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(clientDTO)))
                 .andExpect(status().isNotFound());
@@ -237,7 +241,7 @@ class ClientControllerTest {
         doNothing().when(clientService).deleteClient(clientId);
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/clients/{clientId}", clientId))
+        mockMvc.perform(delete("/api/clients/{clientId}", clientId))
                 .andExpect(status().isNoContent());
 
         verify(clientService, times(1)).deleteClient(clientId);
@@ -251,7 +255,7 @@ class ClientControllerTest {
                 .when(clientService).deleteClient(nonExistentId);
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/clients/{clientId}", nonExistentId))
+        mockMvc.perform(delete("/api/clients/{clientId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
         verify(clientService, times(1)).deleteClient(nonExistentId);
@@ -263,7 +267,7 @@ class ClientControllerTest {
         doNothing().when(clientService).verifyClient(clientId);
 
         // When & Then
-        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", clientId))
+        mockMvc.perform(post("/api/clients/{clientId}/verify", clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verified", is(true)));
 
@@ -278,7 +282,7 @@ class ClientControllerTest {
                 .when(clientService).verifyClient(nonExistentId);
 
         // When & Then
-        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", nonExistentId))
+        mockMvc.perform(post("/api/clients/{clientId}/verify", nonExistentId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.verified", is(false)));
 
