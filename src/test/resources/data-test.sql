@@ -63,7 +63,29 @@ VALUES
 ('a2000000-0000-0000-0000-000000000002', 'c1000000-0000-0000-0000-000000000001', 'CHECKING', 'ACTIVE', '2020-01-01', 2000.00, 'SGD', 'BR001'),
 ('a3000000-0000-0000-0000-000000000003', 'c2000000-0000-0000-0000-000000000002', 'BUSINESS', 'ACTIVE', '2020-01-01', 5000.00, 'USD', 'BR002');
 
--- Insert Test Log Entry
+-- Insert Test Log Entries
 INSERT INTO logs (id, agent_id, client_id, crud_type, attribute_name, before_value, after_value, date_time)
 VALUES
-('l1000000-0000-0000-0000-000000000001', 'test-agent001', 'c1000000-0000-0000-0000-000000000001', 'CREATE', NULL, NULL, '{"clientId":"c1000000-0000-0000-0000-000000000001","firstName":"Test","lastName":"User","dateOfBirth":"1990-01-01","gender":"MALE","emailAddress":"test.user@example.com","phoneNumber":"+6599999999","address":"1 Test Street","city":"Test City","state":"Test State","country":"Test Country","postalCode":"123456","nric":"S9876543Z","agentId":"test-agent001"}', '2023-01-01 10:00:00');
+-- CREATE log for Test User (client profile)
+('l1000000-0000-0000-0000-000000000001', 'test-agent001', 'c1000000-0000-0000-0000-000000000001', 'CREATE', 'c1000000-0000-0000-0000-000000000001', '', '', '2023-01-01 10:00:00'),
+
+-- READ log for Test Admin (client profile)
+('l2000000-0000-0000-0000-000000000002', 'test-agent002', 'c2000000-0000-0000-0000-000000000002', 'READ', 'c2000000-0000-0000-0000-000000000002', '', '', '2023-01-02 11:00:00'),
+
+-- UPDATE log for Test User (client profile attributes)
+('l3000000-0000-0000-0000-000000000003', 'test-agent001', 'c1000000-0000-0000-0000-000000000001', 'UPDATE', 'address|phoneNumber', '1 Test Street|+6599999999', '3 New Street|+6577777777', '2023-01-03 12:00:00'),
+
+-- DELETE log for an account (account-related)
+('l4000000-0000-0000-0000-000000000004', 'test-agent002', 'c2000000-0000-0000-0000-000000000002', 'DELETE', 'c2000000-0000-0000-0000-000000000002', '', '', '2023-01-04 13:00:00'),
+
+-- CREATE log for a savings account (account-related)
+('l5000000-0000-0000-0000-000000000005', 'test-agent001', 'c1000000-0000-0000-0000-000000000001', 'CREATE', 'a1000000-0000-0000-0000-000000000001', '', '', '2023-01-05 14:00:00'),
+
+-- UPDATE log for verification status (client profile)
+('l6000000-0000-0000-0000-000000000006', 'test-agent002', 'c2000000-0000-0000-0000-000000000002', 'UPDATE', 'verificationStatus', 'PENDING', 'VERIFIED', '2023-01-06 15:00:00'),
+
+-- READ log for an account (account-related)
+('l7000000-0000-0000-0000-000000000007', 'test-agent001', 'c1000000-0000-0000-0000-000000000001', 'READ', 'a2000000-0000-0000-0000-000000000002', '', '', '2023-01-07 16:00:00'),
+
+-- UPDATE log for account status (account-related)
+('l8000000-0000-0000-0000-000000000008', 'test-agent002', 'c2000000-0000-0000-0000-000000000002', 'UPDATE', 'accountStatus', 'ACTIVE', 'INACTIVE', '2023-01-08 17:00:00');

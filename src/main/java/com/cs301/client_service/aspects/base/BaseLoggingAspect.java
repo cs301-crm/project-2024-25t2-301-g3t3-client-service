@@ -34,7 +34,15 @@ public abstract class BaseLoggingAspect {
         // For CREATE, READ, DELETE operations, store clientId in attributeName if not provided
         if ((crudType == Log.CrudType.CREATE || crudType == Log.CrudType.READ || crudType == Log.CrudType.DELETE) 
                 && (attributeName == null || attributeName.isEmpty())) {
-            attributeName = clientId;
+                    return Log.builder()
+                        .crudType(crudType)
+                        .attributeName(attributeName)
+                        .beforeValue("")
+                        .afterValue("")
+                        .agentId(LoggingUtils.getCurrentAgentId())
+                        .clientId(clientId)
+                        .dateTime(LocalDateTime.now())
+                        .build();
         }
         
         return Log.builder()
