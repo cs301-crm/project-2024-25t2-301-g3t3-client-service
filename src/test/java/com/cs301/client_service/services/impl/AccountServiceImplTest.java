@@ -184,76 +184,16 @@ class AccountServiceImplTest {
     }
 
     @Test
-    void testUpdateAccount_Success() {
-        // Given
-        when(accountRepository.existsById(accountId)).thenReturn(true);
-        when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
-        when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
-
-        // When
-        Account accountToUpdate = new Account();
-        accountToUpdate.setClient(testClient);
-        accountToUpdate.setAccountType(AccountType.CHECKING);
-        Account result = accountService.updateAccount(accountId, accountToUpdate);
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getAccountId()).isEqualTo(accountId);
-        verify(accountRepository, times(1)).existsById(accountId);
-        verify(clientRepository, times(1)).findById(clientId);
-        verify(accountRepository, times(1)).save(accountToUpdate);
-    }
-
-    @Test
-    void testUpdateAccount_AccountNotFound() {
-        // Given
-        String nonExistentId = "non-existent-id";
-        when(accountRepository.existsById(anyString())).thenReturn(false);
-
-        // When & Then
-        Account accountToUpdate = new Account();
-        AccountNotFoundException exception = assertThrows(AccountNotFoundException.class, () -> {
-            accountService.updateAccount(nonExistentId, accountToUpdate);
-        });
-        
-        // Verify the exception message contains the ID
-        assertThat(exception.getMessage()).contains(nonExistentId);
-        verify(accountRepository, times(1)).existsById(nonExistentId);
-        verify(clientRepository, never()).findById(anyString());
-        verify(accountRepository, never()).save(any(Account.class));
-    }
-
-    @Test
-    void testUpdateAccount_ClientNotFound() {
-        // Given
-        when(accountRepository.existsById(accountId)).thenReturn(true);
-        when(clientRepository.findById(anyString())).thenReturn(Optional.empty());
-
-        // When & Then
-        Account accountToUpdate = new Account();
-        accountToUpdate.setClient(testClient);
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
-            accountService.updateAccount(accountId, accountToUpdate);
-        });
-        
-        // Verify the exception message contains the ID
-        assertThat(exception.getMessage()).contains(clientId);
-        verify(accountRepository, times(1)).existsById(accountId);
-        verify(clientRepository, times(1)).findById(clientId);
-        verify(accountRepository, never()).save(any(Account.class));
-    }
-
-    @Test
     void testDeleteAccount_Success() {
         // Given
-        when(accountRepository.existsById(accountId)).thenReturn(true);
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(testAccount));
         doNothing().when(accountRepository).deleteById(accountId);
 
         // When
         accountService.deleteAccount(accountId);
 
         // Then
-        verify(accountRepository, times(1)).existsById(accountId);
+        verify(accountRepository, times(1)).findById(accountId);
         verify(accountRepository, times(1)).deleteById(accountId);
     }
 
@@ -261,7 +201,7 @@ class AccountServiceImplTest {
     void testDeleteAccount_AccountNotFound() {
         // Given
         String nonExistentId = "non-existent-id";
-        when(accountRepository.existsById(anyString())).thenReturn(false);
+        when(accountRepository.findById(anyString())).thenReturn(Optional.empty());
 
         // When & Then
         AccountNotFoundException exception = assertThrows(AccountNotFoundException.class, () -> {
@@ -270,7 +210,7 @@ class AccountServiceImplTest {
         
         // Verify the exception message contains the ID
         assertThat(exception.getMessage()).contains(nonExistentId);
-        verify(accountRepository, times(1)).existsById(nonExistentId);
+        verify(accountRepository, times(1)).findById(nonExistentId);
         verify(accountRepository, never()).deleteById(anyString());
     }
 
@@ -278,14 +218,18 @@ class AccountServiceImplTest {
     void testDeleteAccountsByClientId_Success() {
         // Given
         when(clientRepository.existsById(clientId)).thenReturn(true);
-        doNothing().when(accountRepository).deleteByClientClientId(clientId);
+        when(accountRepository.findByClientClientId(clientId)).thenReturn(Arrays.asList(testAccount));
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(testAccount));
+        doNothing().when(accountRepository).deleteById(accountId);
 
         // When
         accountService.deleteAccountsByClientId(clientId);
 
         // Then
         verify(clientRepository, times(1)).existsById(clientId);
-        verify(accountRepository, times(1)).deleteByClientClientId(clientId);
+        verify(accountRepository, times(1)).findByClientClientId(clientId);
+        verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, times(1)).deleteById(accountId);
     }
 
     @Test

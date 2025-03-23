@@ -6,31 +6,43 @@ import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
+import com.cs301.client_service.producers.KafkaProducer;
+import com.cs301.client_service.protobuf.A2C;
 import com.cs301.client_service.repositories.AccountRepository;
 import com.cs301.client_service.repositories.ClientRepository;
 import com.cs301.client_service.services.AccountService;
+import com.cs301.client_service.utils.ClientContextHolder;
+import com.cs301.client_service.utils.LoggingUtils;
+
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class AccountServiceImpl implements AccountService {
+    private static final Logger logger = LoggerFactory.getLogger(AccountServiceImpl.class);
+    private static final String CRUD_TYPE_DELETE = "DELETE";
+    private static final String DEFAULT_CLIENT_ID = "UNKNOWN";
+    private static final String DEFAULT_CLIENT_EMAIL = "unknown@example.com";
+    private static final String DEFAULT_ACCOUNT_TYPE = "";
+    
     private final AccountRepository accountRepository;
     private final ClientRepository clientRepository;
+    private final KafkaProducer kafkaProducer;
     
-    public AccountServiceImpl(AccountRepository accountRepository, ClientRepository clientRepository) {
+    public AccountServiceImpl(AccountRepository accountRepository, ClientRepository clientRepository, KafkaProducer kafkaProducer) {
         this.accountRepository = accountRepository;
         this.clientRepository = clientRepository;
+        this.kafkaProducer = kafkaProducer;
     }
 
     @Override
-    @Transactional
     public Account createAccount(Account account) {
-        // Verify client exists
-        Client client = clientRepository.findById(account.getClient().getClientId())
-                .orElseThrow(() -> new ClientNotFoundException(account.getClient().getClientId()));
+        Client client = validateClient(account.getClient().getClientId());
         
-        // Check if client is verified
         if (client.getVerificationStatus() != VerificationStatus.VERIFIED) {
             throw new VerificationException("Cannot create account for unverified client. Client must be verified first.");
         }
@@ -49,47 +61,114 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional(readOnly = true)
     public List<Account> getAccountsByClientId(String clientId) {
-        // Verify client exists
-        if (!clientRepository.existsById(clientId)) {
-            throw new ClientNotFoundException(clientId);
-        }
-
+        validateClientExists(clientId);
         return accountRepository.findByClientClientId(clientId);
     }
 
     @Override
-    @Transactional
-    public Account updateAccount(String accountId, Account account) {
-        // Verify account exists
-        if (!accountRepository.existsById(accountId)) {
-            throw new AccountNotFoundException(accountId);
-        }
-
-        // Verify client exists
-        Client client = clientRepository.findById(account.getClient().getClientId())
-                .orElseThrow(() -> new ClientNotFoundException(account.getClient().getClientId()));
-
-        account.setAccountId(accountId); // Ensure ID matches
-        account.setClient(client);
-
-        return accountRepository.save(account);
-    }
-
-    @Override
-    @Transactional
     public void deleteAccount(String accountId) {
-        if (!accountRepository.existsById(accountId)) {
-            throw new AccountNotFoundException(accountId);
+        try {
+            AccountDeletionContext context = prepareAccountDeletion(accountId);
+            
+            sendKafkaMessageSafely(() -> 
+                sendAccountDeleteKafkaMessage(
+                    accountId, 
+                    context.clientId, 
+                    context.clientEmail, 
+                    context.accountType
+                ),
+                "account deletion"
+            );
+            
+            accountRepository.deleteById(accountId);
+            logger.info("Account deleted: {}", accountId);
+        } finally {
+            ClientContextHolder.clear();
         }
-        accountRepository.deleteById(accountId);
     }
 
     @Override
-    @Transactional
     public void deleteAccountsByClientId(String clientId) {
+        validateClientExists(clientId);
+        
+        List<Account> accounts = accountRepository.findByClientClientId(clientId);
+        
+        if (accounts.isEmpty()) {
+            logger.info("No accounts found for client ID: {}", clientId);
+            return;
+        }
+        
+        accounts.forEach(account -> deleteAccount(account.getAccountId()));
+    }
+    
+    private Client validateClient(String clientId) {
+        return clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFoundException(clientId));
+    }
+    
+    private void validateClientExists(String clientId) {
         if (!clientRepository.existsById(clientId)) {
             throw new ClientNotFoundException(clientId);
         }
-        accountRepository.deleteByClientClientId(clientId);
+    }
+    
+    private AccountDeletionContext prepareAccountDeletion(String accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+        
+        AccountDeletionContext context = new AccountDeletionContext();
+        
+        if (account.getClient() != null) {
+            Client client = clientRepository.findById(account.getClient().getClientId()).orElse(null);
+            
+            if (client != null) {
+                context.clientId = client.getClientId();
+                context.clientEmail = client.getEmailAddress();
+                context.accountType = account.getAccountType() != null ? 
+                        account.getAccountType().toString() : DEFAULT_ACCOUNT_TYPE;
+                
+                setClientContext(context.clientId, context.clientEmail, context.accountType);
+                logger.info("Processing account deletion - accountId: {}, clientId: {}", accountId, context.clientId);
+            }
+        }
+        
+        return context;
+    }
+    
+    private void setClientContext(String clientId, String clientEmail, String accountType) {
+        ClientContextHolder.setClientId(clientId);
+        ClientContextHolder.setClientEmail(clientEmail);
+        ClientContextHolder.setAccountType(accountType);
+    }
+    
+    private void sendKafkaMessageSafely(Runnable messageSender, String operationType) {
+        try {
+            messageSender.run();
+        } catch (Exception e) {
+            logger.error("Error sending A2C message for {}: {}", operationType, e.getMessage(), e);
+            // Continue with operation even if message sending fails
+        }
+    }
+    
+    private void sendAccountDeleteKafkaMessage(String accountId, String clientId, String clientEmail, String accountType) {
+        logger.info("Sending A2C message for account deletion - accountId: {}", accountId);
+        
+        A2C a2c = A2C.newBuilder()
+                .setAgentId(LoggingUtils.getCurrentAgentId())
+                .setClientId(clientId)
+                .setClientEmail(clientEmail)
+                .setCrudType(CRUD_TYPE_DELETE)
+                .setAccountId(accountId)
+                .setAccountType(accountType)
+                .build();
+        
+        kafkaProducer.produceA2CMessage(accountId, a2c, true);
+        logger.info("Successfully sent A2C message for account deletion");
+    }
+    
+    private static class AccountDeletionContext {
+        String clientId = DEFAULT_CLIENT_ID;
+        String clientEmail = DEFAULT_CLIENT_EMAIL;
+        String accountType = DEFAULT_ACCOUNT_TYPE;
     }
 }

@@ -92,7 +92,7 @@ class AccountControllerTest {
         when(accountMapper.toDto(any(Account.class))).thenReturn(accountDTO);
 
         // When & Then
-        mockMvc.perform(post("/api/v1/accounts")
+        mockMvc.perform(post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(accountDTO)))
                 .andExpect(status().isOk())
@@ -113,7 +113,7 @@ class AccountControllerTest {
         when(accountMapper.toDto(any(Account.class))).thenReturn(accountDTO);
 
         // When & Then
-        mockMvc.perform(get("/api/v1/accounts/{accountId}", accountId))
+        mockMvc.perform(get("/api/accounts/{accountId}", accountId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountId", is(accountId)))
                 .andExpect(jsonPath("$.clientId", is(clientId)));
@@ -129,49 +129,10 @@ class AccountControllerTest {
         when(accountService.getAccount(anyString())).thenThrow(new AccountNotFoundException(nonExistentId));
 
         // When & Then
-        mockMvc.perform(get("/api/v1/accounts/{accountId}", nonExistentId))
+        mockMvc.perform(get("/api/accounts/{accountId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
         verify(accountService, times(1)).getAccount(nonExistentId);
-        verify(accountMapper, never()).toDto(any(Account.class));
-    }
-
-    @Test
-    void testUpdateAccount_Success() throws Exception {
-        // Given
-        when(accountMapper.toModel(any(AccountDTO.class))).thenReturn(accountModel);
-        when(accountService.updateAccount(eq(accountId), any(Account.class))).thenReturn(accountModel);
-        when(accountMapper.toDto(any(Account.class))).thenReturn(accountDTO);
-
-        // When & Then
-        mockMvc.perform(put("/api/v1/accounts/{accountId}", accountId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(accountDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accountId", is(accountId)))
-                .andExpect(jsonPath("$.clientId", is(clientId)));
-
-        verify(accountMapper, times(1)).toModel(any(AccountDTO.class));
-        verify(accountService, times(1)).updateAccount(eq(accountId), any(Account.class));
-        verify(accountMapper, times(1)).toDto(any(Account.class));
-    }
-
-    @Test
-    void testUpdateAccount_NotFound() throws Exception {
-        // Given
-        String nonExistentId = "non-existent-id";
-        when(accountMapper.toModel(any(AccountDTO.class))).thenReturn(accountModel);
-        when(accountService.updateAccount(anyString(), any(Account.class)))
-                .thenThrow(new AccountNotFoundException(nonExistentId));
-
-        // When & Then
-        mockMvc.perform(put("/api/v1/accounts/{accountId}", nonExistentId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(accountDTO)))
-                .andExpect(status().isNotFound());
-
-        verify(accountMapper, times(1)).toModel(any(AccountDTO.class));
-        verify(accountService, times(1)).updateAccount(eq(nonExistentId), any(Account.class));
         verify(accountMapper, never()).toDto(any(Account.class));
     }
 
@@ -181,7 +142,7 @@ class AccountControllerTest {
         doNothing().when(accountService).deleteAccount(accountId);
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/accounts/{accountId}", accountId))
+        mockMvc.perform(delete("/api/accounts/{accountId}", accountId))
                 .andExpect(status().isNoContent());
 
         verify(accountService, times(1)).deleteAccount(accountId);
@@ -195,7 +156,7 @@ class AccountControllerTest {
                 .when(accountService).deleteAccount(nonExistentId);
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/accounts/{accountId}", nonExistentId))
+        mockMvc.perform(delete("/api/accounts/{accountId}", nonExistentId))
                 .andExpect(status().isNotFound());
 
         verify(accountService, times(1)).deleteAccount(nonExistentId);
@@ -211,7 +172,7 @@ class AccountControllerTest {
         when(accountMapper.toDtoList(accounts)).thenReturn(accountDTOs);
 
         // When & Then
-        mockMvc.perform(get("/api/v1/accounts/client/{clientId}", clientId))
+        mockMvc.perform(get("/api/accounts/client/{clientId}", clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].accountId", is(accountId)))
                 .andExpect(jsonPath("$[0].clientId", is(clientId)))
@@ -230,7 +191,7 @@ class AccountControllerTest {
                 .thenThrow(new ClientNotFoundException(nonExistentClient));
 
         // When & Then
-        mockMvc.perform(get("/api/v1/accounts/client/{clientId}", nonExistentClient))
+        mockMvc.perform(get("/api/accounts/client/{clientId}", nonExistentClient))
                 .andExpect(status().isNotFound());
 
         verify(accountService, times(1)).getAccountsByClientId(nonExistentClient);
