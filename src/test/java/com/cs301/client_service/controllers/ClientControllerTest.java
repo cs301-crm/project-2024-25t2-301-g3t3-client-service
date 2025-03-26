@@ -7,6 +7,7 @@ import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.mappers.ClientMapper;
 import com.cs301.client_service.models.Client;
+import com.cs301.client_service.producers.KafkaProducer;
 import com.cs301.client_service.services.impl.ClientServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,9 @@ class ClientControllerTest {
 
     @MockBean
     private ClientMapper clientMapper;
+    
+    @MockBean
+    private KafkaProducer kafkaProducer;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -260,73 +264,28 @@ class ClientControllerTest {
     @Test
     void testVerifyClient_Success() throws Exception {
         // Given
-        Map<String, String> payload = new HashMap<>();
-        payload.put("nric", nric);
-
-        doNothing().when(clientService).verifyClient(clientId, nric);
+        doNothing().when(clientService).verifyClient(clientId);
 
         // When & Then
-        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", clientId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
+        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verified", is(true)));
 
-        verify(clientService, times(1)).verifyClient(clientId, nric);
-    }
-
-    @Test
-    void testVerifyClient_InvalidNric() throws Exception {
-        // Given
-        Map<String, String> payload = new HashMap<>();
-        payload.put("nric", "wrong-nric");
-
-        doThrow(new VerificationException("Invalid NRIC provided"))
-                .when(clientService).verifyClient(clientId, "wrong-nric");
-
-        // When & Then
-        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", clientId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.verified", is(false)));
-
-        verify(clientService, times(1)).verifyClient(clientId, "wrong-nric");
+        verify(clientService, times(1)).verifyClient(clientId);
     }
 
     @Test
     void testVerifyClient_ClientNotFound() throws Exception {
         // Given
         String nonExistentId = "non-existent-id";
-        Map<String, String> payload = new HashMap<>();
-        payload.put("nric", nric);
-
         doThrow(new ClientNotFoundException(nonExistentId))
-                .when(clientService).verifyClient(nonExistentId, nric);
+                .when(clientService).verifyClient(nonExistentId);
 
         // When & Then
-        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", nonExistentId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isOk())
+        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", nonExistentId))
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.verified", is(false)));
 
-        verify(clientService, times(1)).verifyClient(nonExistentId, nric);
-    }
-
-    @Test
-    void testVerifyClient_MissingNric() throws Exception {
-        // Given
-        Map<String, String> payload = new HashMap<>();
-        // No NRIC in payload
-
-        // When & Then
-        mockMvc.perform(post("/api/v1/clients/{clientId}/verify", clientId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.verified", is(false)));
-
-        verify(clientService, never()).verifyClient(anyString(), anyString());
+        verify(clientService, times(1)).verifyClient(nonExistentId);
     }
 }

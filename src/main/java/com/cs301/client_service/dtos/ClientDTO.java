@@ -1,6 +1,7 @@
 package com.cs301.client_service.dtos;
 
 import com.cs301.client_service.constants.Gender;
+import com.cs301.client_service.constants.VerificationStatus;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -63,6 +64,8 @@ public class ClientDTO {
     private String nric;
     
     private String agentId;
+    
+    private VerificationStatus verificationStatus;
 
     private List<AccountDTO> accounts;
 }

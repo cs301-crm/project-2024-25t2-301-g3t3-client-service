@@ -25,6 +25,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Generate Protobuf Classes
+        run: ./gradlew generateProto
+
       - name: Run Tests
         run: ./gradlew test --no-daemon
         env:

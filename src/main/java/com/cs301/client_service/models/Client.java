@@ -1,6 +1,7 @@
 package com.cs301.client_service.models;
 
 import com.cs301.client_service.constants.Gender;
+import com.cs301.client_service.constants.VerificationStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
@@ -80,6 +81,12 @@ public class Client {
 
     @NotBlank
     private String agentId;
+    
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
     @ToString.Exclude

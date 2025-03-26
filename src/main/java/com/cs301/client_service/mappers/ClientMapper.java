@@ -1,5 +1,6 @@
 package com.cs301.client_service.mappers;
 
+import com.cs301.client_service.constants.VerificationStatus;
 import com.cs301.client_service.dtos.ClientDTO;
 import com.cs301.client_service.models.Client;
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ public class ClientMapper {
                 .postalCode(model.getPostalCode())
                 .nric(model.getNric())
                 .agentId(model.getAgentId())
+                .verificationStatus(model.getVerificationStatus())
                 .build();
 
         // Handle accounts safely
@@ -79,6 +81,13 @@ public class ClientMapper {
         model.setPostalCode(dto.getPostalCode());
         model.setNric(dto.getNric());
         model.setAgentId(dto.getAgentId());
+        
+        // Set default verification status if not provided
+        if (dto.getVerificationStatus() == null) {
+            model.setVerificationStatus(VerificationStatus.PENDING);
+        } else {
+            model.setVerificationStatus(dto.getVerificationStatus());
+        }
 
         // Handle accounts safely
         if (dto.getAccounts() != null && !dto.getAccounts().isEmpty()) {

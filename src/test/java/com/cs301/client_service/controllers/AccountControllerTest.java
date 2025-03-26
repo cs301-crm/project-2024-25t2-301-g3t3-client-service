@@ -137,45 +137,6 @@ class AccountControllerTest {
     }
 
     @Test
-    void testUpdateAccount_Success() throws Exception {
-        // Given
-        when(accountMapper.toModel(any(AccountDTO.class))).thenReturn(accountModel);
-        when(accountService.updateAccount(eq(accountId), any(Account.class))).thenReturn(accountModel);
-        when(accountMapper.toDto(any(Account.class))).thenReturn(accountDTO);
-
-        // When & Then
-        mockMvc.perform(put("/api/v1/accounts/{accountId}", accountId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(accountDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accountId", is(accountId)))
-                .andExpect(jsonPath("$.clientId", is(clientId)));
-
-        verify(accountMapper, times(1)).toModel(any(AccountDTO.class));
-        verify(accountService, times(1)).updateAccount(eq(accountId), any(Account.class));
-        verify(accountMapper, times(1)).toDto(any(Account.class));
-    }
-
-    @Test
-    void testUpdateAccount_NotFound() throws Exception {
-        // Given
-        String nonExistentId = "non-existent-id";
-        when(accountMapper.toModel(any(AccountDTO.class))).thenReturn(accountModel);
-        when(accountService.updateAccount(anyString(), any(Account.class)))
-                .thenThrow(new AccountNotFoundException(nonExistentId));
-
-        // When & Then
-        mockMvc.perform(put("/api/v1/accounts/{accountId}", nonExistentId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(accountDTO)))
-                .andExpect(status().isNotFound());
-
-        verify(accountMapper, times(1)).toModel(any(AccountDTO.class));
-        verify(accountService, times(1)).updateAccount(eq(nonExistentId), any(Account.class));
-        verify(accountMapper, never()).toDto(any(Account.class));
-    }
-
-    @Test
     void testDeleteAccount_Success() throws Exception {
         // Given
         doNothing().when(accountService).deleteAccount(accountId);

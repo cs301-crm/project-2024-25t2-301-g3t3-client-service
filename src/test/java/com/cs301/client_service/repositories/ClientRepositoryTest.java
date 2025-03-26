@@ -87,6 +87,7 @@ class ClientRepositoryTest {
         newClient.setCountry("Singapore");
         newClient.setPostalCode("654321");
         newClient.setNric("S7654321A");
+        newClient.setAgentId("agent002");
 
         // When: saving the client
         Client savedClient = clientRepository.save(newClient);
