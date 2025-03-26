@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/clients")
+@RequestMapping("/api/v1/clients")
 public class ClientController {
     private static final Logger logger = LoggerFactory.getLogger(ClientController.class);
     private static final String VERIFIED = "verified";

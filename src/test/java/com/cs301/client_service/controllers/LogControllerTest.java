@@ -114,7 +114,7 @@ class LogControllerTest {
         when(logMapper.toDTOList(logs)).thenReturn(logDTOs);
 
         // When & Then
-        mockMvc.perform(get("/api/logs"))
+        mockMvc.perform(get("/api/v1/logs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].id", is("l1000000-0000-0000-0000-000000000001")))
@@ -137,7 +137,7 @@ class LogControllerTest {
         when(logMapper.toDTOList(logs)).thenReturn(logDTOs);
 
         // When & Then
-        mockMvc.perform(get("/api/logs/client/{clientId}", clientId))
+        mockMvc.perform(get("/api/v1/logs/client/{clientId}", clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].id", is("l1000000-0000-0000-0000-000000000001")))
@@ -158,7 +158,7 @@ class LogControllerTest {
         when(logMapper.toDTOList(Arrays.asList())).thenReturn(Arrays.asList());
 
         // When & Then
-        mockMvc.perform(get("/api/logs/client/{clientId}", nonExistentClientId))
+        mockMvc.perform(get("/api/v1/logs/client/{clientId}", nonExistentClientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
 
@@ -176,7 +176,7 @@ class LogControllerTest {
         when(logMapper.toDTOList(logs)).thenReturn(logDTOs);
 
         // When & Then
-        mockMvc.perform(get("/api/logs/type/{crudType}", "CREATE"))
+        mockMvc.perform(get("/api/v1/logs/type/{crudType}", "CREATE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].id", is("l1000000-0000-0000-0000-000000000001")))
@@ -195,7 +195,7 @@ class LogControllerTest {
         when(logMapper.toDTOList(Arrays.asList())).thenReturn(Arrays.asList());
 
         // When & Then
-        mockMvc.perform(get("/api/logs/type/{crudType}", "DELETE"))
+        mockMvc.perform(get("/api/v1/logs/type/{crudType}", "DELETE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
 
@@ -213,7 +213,7 @@ class LogControllerTest {
         when(logMapper.toDTOList(logs)).thenReturn(logDTOs);
 
         // When & Then
-        mockMvc.perform(get("/api/logs/agent/{agentId}", agentId))
+        mockMvc.perform(get("/api/v1/logs/agent/{agentId}", agentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].id", is("l1000000-0000-0000-0000-000000000001")))
@@ -234,7 +234,7 @@ class LogControllerTest {
         when(logMapper.toDTOList(Arrays.asList())).thenReturn(Arrays.asList());
 
         // When & Then
-        mockMvc.perform(get("/api/logs/agent/{agentId}", nonExistentAgentId))
+        mockMvc.perform(get("/api/v1/logs/agent/{agentId}", nonExistentAgentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
 
