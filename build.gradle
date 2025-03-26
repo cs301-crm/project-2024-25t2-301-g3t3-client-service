@@ -101,3 +101,12 @@ task runC2CConsumer(type: JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.cs301.client_service.kafka.TestC2CConsumer'
 }
+
+// Task to run the Log Kafka consumer
+task runLogConsumer(type: JavaExec) {
+    description = 'Runs the Log Kafka consumer'
+    group = 'application'
+    
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.cs301.client_service.kafka.TestLogConsumer'
+}
