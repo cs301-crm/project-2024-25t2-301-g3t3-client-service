@@ -29,6 +29,9 @@ public class KafkaConfig {
     
     @Value("${spring.kafka.topic.a2c}")
     private String a2cTopic;
+    
+    @Value("${spring.kafka.topic.log}")
+    private String logTopic;
 
     /**
      * Creates a producer factory for Kafka
@@ -75,6 +78,18 @@ public class KafkaConfig {
     @Bean
     public NewTopic a2cTopic() {
         return TopicBuilder.name(a2cTopic)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+    
+    /**
+     * Creates a Kafka topic for log messages
+     * @return the configured topic
+     */
+    @Bean
+    public NewTopic logTopic() {
+        return TopicBuilder.name(logTopic)
                 .partitions(3)
                 .replicas(1)
                 .build();

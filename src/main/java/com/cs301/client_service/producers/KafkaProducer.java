@@ -25,6 +25,9 @@ public class KafkaProducer {
     
     @Value("${spring.kafka.topic.a2c}")
     private String a2cTopic;
+    
+    @Value("${spring.kafka.topic.log}")
+    private String logTopic;
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -87,6 +90,19 @@ public class KafkaProducer {
     }
     
     /**
+     * Produces a log message to Kafka
+     * @param logId the log ID (used for logging only)
+     * @param message the message to produce (should be of type Log)
+     * @param isSuccessful whether the API call was successful
+     */
+    public void produceLogMessage(String logId, Object message, boolean isSuccessful) {
+        if (!(message instanceof com.cs301.client_service.protobuf.Log)) {
+            logger.warn("Message is not of type Log: {}", message.getClass());
+        }
+        produceMessage(logId, message, isSuccessful);
+    }
+    
+    /**
      * Determines the appropriate Kafka topic based on the message type
      * @param message the message
      * @return the topic name
@@ -97,8 +113,10 @@ public class KafkaProducer {
             return c2cTopic;
         } else if (message instanceof A2C) {
             return a2cTopic;
+        } else if (message instanceof com.cs301.client_service.protobuf.Log) {
+            return logTopic;
         }
         
-        throw new IllegalArgumentException("Message is not of type C2C or A2C: " + message.getClass());
+        throw new IllegalArgumentException("Message is not of supported type: " + message.getClass());
     }
 }
