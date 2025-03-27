@@ -7,7 +7,7 @@ import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
 import com.cs301.client_service.producers.KafkaProducer;
-import com.cs301.client_service.protobuf.A2C;
+import com.cs301.shared.protobuf.A2C;
 import com.cs301.client_service.repositories.AccountRepository;
 import com.cs301.client_service.repositories.ClientRepository;
 import com.cs301.client_service.services.AccountService;

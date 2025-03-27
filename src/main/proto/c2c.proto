@@ -1,38 +1,19 @@
 syntax = "proto3";
+package com.cs301.shared;
 
-package com.cs301.client_service;
-
+option java_package = "com.cs301.shared.protobuf";
 option java_multiple_files = true;
-option java_package = "com.cs301.client_service.protobuf";
 
-// Represents a client account action notification
 message C2C {
-  
-  // Unique identifier for the agent who performed the action
   string agent_id = 1;
-
-  // Unique identifier of the client affected by the action
   string client_id = 2;
-
-  // Email address of the client
   string client_email = 3;
-
-  // Type of CRUD operation performed (CREATE, UPDATE, DELETE)
   string crud_type = 4;
-
-  // Additional information about the CRUD action
   CRUDInfo crud_info = 5;
 }
 
-// Represents details of a CRUD operation
 message CRUDInfo {
-  
-  // Name of the attribute being changed
   string attribute = 1;
-
-  // Previous value of the attribute
   string before_value = 2;
-
-  // New value of the attribute
   string after_value = 3;
 }

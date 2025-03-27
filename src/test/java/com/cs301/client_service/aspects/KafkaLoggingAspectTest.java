@@ -5,7 +5,7 @@ import com.cs301.client_service.models.Client;
 import com.cs301.client_service.producers.KafkaProducer;
 import com.cs301.client_service.repositories.ClientRepository;
 import com.cs301.client_service.services.impl.ClientServiceImpl;
-import com.cs301.client_service.protobuf.C2C;
+import com.cs301.shared.protobuf.C2C;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

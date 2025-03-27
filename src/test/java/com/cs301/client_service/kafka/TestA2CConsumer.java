@@ -1,6 +1,6 @@
 package com.cs301.client_service.kafka;
 
-import com.cs301.client_service.protobuf.A2C;
+import com.cs301.shared.protobuf.A2C;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

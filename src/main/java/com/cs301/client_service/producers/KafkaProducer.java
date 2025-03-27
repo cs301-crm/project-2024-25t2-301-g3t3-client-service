@@ -1,7 +1,9 @@
 package com.cs301.client_service.producers;
 
-import com.cs301.client_service.protobuf.A2C;
-import com.cs301.client_service.protobuf.C2C;
+// import com.cs301.client_service.protobuf.A2C;
+// import com.cs301.client_service.protobuf.C2C;
+import com.cs301.shared.protobuf.A2C;
+import com.cs301.shared.protobuf.C2C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
