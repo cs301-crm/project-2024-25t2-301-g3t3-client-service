@@ -1,7 +1,5 @@
 package com.cs301.client_service.producers;
 
-// import com.cs301.client_service.protobuf.A2C;
-// import com.cs301.client_service.protobuf.C2C;
 import com.cs301.shared.protobuf.A2C;
 import com.cs301.shared.protobuf.C2C;
 import org.slf4j.Logger;
@@ -98,7 +96,7 @@ public class KafkaProducer {
      * @param isSuccessful whether the API call was successful
      */
     public void produceLogMessage(String logId, Object message, boolean isSuccessful) {
-        if (!(message instanceof com.cs301.client_service.protobuf.Log)) {
+        if (!(message instanceof com.cs301.shared.protobuf.Log)) {
             logger.warn("Message is not of type Log: {}", message.getClass());
         }
         produceMessage(logId, message, isSuccessful);
@@ -115,7 +113,7 @@ public class KafkaProducer {
             return c2cTopic;
         } else if (message instanceof A2C) {
             return a2cTopic;
-        } else if (message instanceof com.cs301.client_service.protobuf.Log) {
+        } else if (message instanceof com.cs301.shared.protobuf.Log) {
             return logTopic;
         }
         

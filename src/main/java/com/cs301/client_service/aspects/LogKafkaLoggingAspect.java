@@ -92,7 +92,7 @@ public class LogKafkaLoggingAspect extends KafkaLoggingAspect {
         try {
             logger.debug("Publishing log event to Kafka for log ID: {}", result.getId());
             
-            com.cs301.client_service.protobuf.Log protoLog = com.cs301.client_service.protobuf.Log.newBuilder()
+            com.cs301.shared.protobuf.Log protoLog = com.cs301.shared.protobuf.Log.newBuilder()
                 .setLogId(result.getId())
                 .setActor(result.getAgentId())
                 .setTransactionType(result.getCrudType().toString())

@@ -1,6 +1,6 @@
 package com.cs301.client_service.kafka;
 
-import com.cs301.client_service.protobuf.Log;
+import com.cs301.shared.protobuf.Log;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
