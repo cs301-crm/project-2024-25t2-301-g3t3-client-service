@@ -2,6 +2,7 @@ package com.cs301.client_service.controllers;
 
 import com.cs301.client_service.dtos.ClientDTO;
 import com.cs301.client_service.dtos.ClientListDTO;
+import com.cs301.client_service.dtos.VerificationResponseDTO;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.mappers.ClientMapper;
@@ -113,14 +114,14 @@ public class ClientController {
      * This changes their status from PENDING to VERIFIED
      */
     @PostMapping("/{clientId}/verify")
-    public ResponseEntity<Map<String, Boolean>> verifyClient(@PathVariable String clientId) {
+    public ResponseEntity<VerificationResponseDTO> verifyClient(@PathVariable String clientId) {
         try {
             clientService.verifyClient(clientId);
-            return ResponseEntity.ok(Map.of(VERIFIED, true));
+            return ResponseEntity.ok(VerificationResponseDTO.builder().verified(true).build());
         } catch (ClientNotFoundException ex) {
             // Return a consistent response format for the not found case
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of(VERIFIED, false));
+                    .body(VerificationResponseDTO.builder().verified(false).build());
         }
     }
 }
