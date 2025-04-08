@@ -27,6 +27,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	
+	// Environment Variables
+	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+	
 	// Kafka
 	implementation 'org.springframework.kafka:spring-kafka'
 	implementation 'org.springframework.kafka:spring-kafka-test'
