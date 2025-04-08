@@ -21,9 +21,15 @@ public class AccountMapper {
             return null;
         }
 
+        String clientName = "";
+        if (model.getClient() != null) {
+            clientName = model.getClient().getFirstName() + " " + model.getClient().getLastName();
+        }
+
         return AccountDTO.builder()
                 .accountId(model.getAccountId())
-                .clientId(model.getClient().getClientId())
+                .clientId(model.getClient() != null ? model.getClient().getClientId() : null)
+                .clientName(clientName)
                 .accountType(model.getAccountType())
                 .accountStatus(model.getAccountStatus())
                 .openingDate(model.getOpeningDate().format(DATE_FORMATTER))
@@ -42,9 +48,11 @@ public class AccountMapper {
         model.setAccountId(dto.getAccountId());
 
         // Note: Client needs to be set separately as we only have clientId in DTO
-        Client client = new Client();
-        client.setClientId(dto.getClientId());
-        model.setClient(client);
+        if (dto.getClientId() != null) {
+            Client client = new Client();
+            client.setClientId(dto.getClientId());
+            model.setClient(client);
+        }
 
         model.setAccountType(dto.getAccountType());
         model.setAccountStatus(dto.getAccountStatus());
@@ -62,7 +70,7 @@ public class AccountMapper {
         }
         return models.stream()
                 .map(this::toDto)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public List<Account> toModelList(List<AccountDTO> dtos) {
@@ -71,6 +79,6 @@ public class AccountMapper {
         }
         return dtos.stream()
                 .map(this::toModel)
-                .toList();
+                .collect(Collectors.toList());
     }
 }

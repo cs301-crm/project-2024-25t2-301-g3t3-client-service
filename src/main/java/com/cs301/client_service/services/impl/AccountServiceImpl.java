@@ -17,8 +17,12 @@ import com.cs301.client_service.utils.LoggingUtils;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.cs301.client_service.constants.AccountStatus;
+import com.cs301.client_service.constants.AccountType;
 
 @Service
 @Transactional
@@ -63,6 +67,25 @@ public class AccountServiceImpl implements AccountService {
     public List<Account> getAccountsByClientId(String clientId) {
         validateClientExists(clientId);
         return accountRepository.findByClientClientId(clientId);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Account> getAccountsByClientIdPaginated(String clientId, Pageable pageable) {
+        validateClientExists(clientId);
+        return accountRepository.findByClientClientId(clientId, pageable);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Account> getAllAccountsPaginated(Pageable pageable, AccountType type, AccountStatus status) {
+        return accountRepository.findAllWithFilters(type, status, pageable);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Account> getAccountsWithSearchAndFilters(String agentId, String searchQuery, AccountType type, AccountStatus status, Pageable pageable) {
+        return accountRepository.findWithSearchAndFilters(agentId, type, status, searchQuery, pageable);
     }
 
     @Override
