@@ -2,6 +2,7 @@ package com.cs301.client_service.mappers;
 
 import com.cs301.client_service.constants.VerificationStatus;
 import com.cs301.client_service.dtos.ClientDTO;
+import com.cs301.client_service.dtos.ClientListDTO;
 import com.cs301.client_service.models.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -97,5 +100,33 @@ public class ClientMapper {
         }
 
         return model;
+    }
+    
+    /**
+     * Converts Client model to simplified ClientListDTO
+     */
+    public ClientListDTO toListDto(Client model) {
+        if (model == null) {
+            return null;
+        }
+        
+        return ClientListDTO.builder()
+                .clientId(model.getClientId())
+                .firstName(model.getFirstName())
+                .lastName(model.getLastName())
+                .build();
+    }
+    
+    /**
+     * Converts a list of Client models to a list of ClientListDTOs
+     */
+    public List<ClientListDTO> toListDtoList(List<Client> models) {
+        if (models == null) {
+            return Collections.emptyList();
+        }
+        
+        return models.stream()
+                .map(this::toListDto)
+                .collect(Collectors.toList());
     }
 }
