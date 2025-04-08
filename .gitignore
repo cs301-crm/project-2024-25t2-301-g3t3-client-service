@@ -38,3 +38,4 @@ target
 ### Application Properties ###
 src/main/resources/application.properties
 *.sh
+.env
