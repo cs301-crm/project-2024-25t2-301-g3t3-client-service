@@ -113,12 +113,6 @@ public class AccountServiceLoggingAspect extends DatabaseLoggingAspect {
     public void accountsRetrievalByClientId() {}
 
     /**
-     * Pointcut for account update
-     */
-    @Pointcut("execution(* com.cs301.client_service.services.impl.AccountServiceImpl.updateAccount(..))")
-    public void accountUpdate() {}
-
-    /**
      * Pointcut for account deletion
      */
     @Pointcut("execution(* com.cs301.client_service.services.impl.AccountServiceImpl.deleteAccount(..)) && args(accountId)")
@@ -168,79 +162,6 @@ public class AccountServiceLoggingAspect extends DatabaseLoggingAspect {
             }
         } catch (Exception e) {
             logger.error("Error logging accounts retrieval by client ID", e);
-        }
-    }
-    
-    /**
-     * Log after account update
-     * 
-     * Format:
-     * - attributeName: pipe-separated attribute names (e.g., "accountStatus|currency")
-     * - beforeValue: pipe-separated values (e.g., "ACTIVE|SGD")
-     * - afterValue: pipe-separated values (e.g., "INACTIVE|USD")
-     */
-    @AfterReturning(pointcut = "accountUpdate()", returning = "result")
-    public void logAfterAccountUpdate(JoinPoint joinPoint, Account result) {
-        try {
-            Object[] args = getArgs(joinPoint);
-            String accountId = (String) args[0];
-            Account newAccount = result; // Use the result which is the updated account
-            
-            // Get the existing account to compare with
-            Account oldAccount = accountRepository.findById(accountId).orElse(null);
-            
-            if (oldAccount == null) {
-                logger.warn("Account not found for update with ID: {}", accountId);
-                return;
-            }
-            
-            String clientId = oldAccount.getClient().getClientId();
-            
-            // Compare old and new accounts to determine what changed
-            Map<String, Map.Entry<String, String>> changes = compareEntities(oldAccount, newAccount);
-            
-            // Only create a log if there were changes
-            if (!changes.isEmpty()) {
-                // Create consolidated strings for attribute names, before values, and after values
-                StringBuilder attributeNames = new StringBuilder();
-                StringBuilder beforeValues = new StringBuilder();
-                StringBuilder afterValues = new StringBuilder();
-                
-                boolean first = true;
-                for (Map.Entry<String, Map.Entry<String, String>> change : changes.entrySet()) {
-                    if (!first) {
-                        attributeNames.append("|");
-                        beforeValues.append("|");
-                        afterValues.append("|");
-                    }
-                    
-                    String attrName = change.getKey();
-                    String beforeValue = change.getValue().getKey();
-                    String afterValue = change.getValue().getValue();
-                    
-                    attributeNames.append(attrName);
-                    beforeValues.append(beforeValue);
-                    afterValues.append(afterValue);
-                    
-                    first = false;
-                }
-                
-                // Create and save the log entry
-                Log log = createLogEntry(
-                    clientId,
-                    newAccount,
-                    Log.CrudType.UPDATE,
-                    attributeNames.toString(),
-                    beforeValues.toString(),
-                    afterValues.toString()
-                );
-                
-                logRepository.save(log);
-                logger.debug("Logged update for account with ID: {} for client: {}", 
-                            accountId, clientId);
-            }
-        } catch (Exception e) {
-            logger.error("Error logging account update", e);
         }
     }
 

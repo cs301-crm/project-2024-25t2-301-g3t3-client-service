@@ -13,12 +13,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class LogDTO {
     private String id;
-    private String message;
     private String clientId;
+    private String clientName; // Added to match frontend expectations
     private String agentId;
-    private LocalDateTime dateTime;
+    private String dateTime; // Changed from LocalDateTime to String
     private String attributeName;
     private String beforeValue;
     private String afterValue;
     private String crudType;
+    private String message; // Added to match test expectations
 }

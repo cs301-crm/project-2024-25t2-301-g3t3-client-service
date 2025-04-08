@@ -107,9 +107,9 @@ public class LogMapperTest {
         // Assert
         assertEquals(createLog.getId(), dto.getId());
         assertEquals(createLog.getClientId(), dto.getClientId());
+        assertNotNull(dto.getClientName());
         assertEquals(createLog.getAgentId(), dto.getAgentId());
-        assertEquals(createLog.getDateTime(), dto.getDateTime());
-        assertEquals("Created profile for " + createLog.getClientId(), dto.getMessage());
+        assertEquals(createLog.getDateTime().toString(), dto.getDateTime());
     }
 
     @Test
@@ -120,9 +120,9 @@ public class LogMapperTest {
         // Assert
         assertEquals(readLog.getId(), dto.getId());
         assertEquals(readLog.getClientId(), dto.getClientId());
+        assertNotNull(dto.getClientName());
         assertEquals(readLog.getAgentId(), dto.getAgentId());
-        assertEquals(readLog.getDateTime(), dto.getDateTime());
-        assertEquals("Retrieved profile for " + readLog.getClientId(), dto.getMessage());
+        assertEquals(readLog.getDateTime().toString(), dto.getDateTime());
     }
 
     @Test
@@ -133,9 +133,12 @@ public class LogMapperTest {
         // Assert
         assertEquals(updateLog.getId(), dto.getId());
         assertEquals(updateLog.getClientId(), dto.getClientId());
+        assertNotNull(dto.getClientName());
         assertEquals(updateLog.getAgentId(), dto.getAgentId());
-        assertEquals(updateLog.getDateTime(), dto.getDateTime());
-        assertEquals("Updated firstName, lastName, address for " + updateLog.getClientId(), dto.getMessage());
+        assertEquals(updateLog.getDateTime().toString(), dto.getDateTime());
+        assertEquals(updateLog.getAttributeName(), dto.getAttributeName());
+        assertEquals(updateLog.getBeforeValue(), dto.getBeforeValue());
+        assertEquals(updateLog.getAfterValue(), dto.getAfterValue());
     }
 
     @Test
@@ -146,9 +149,9 @@ public class LogMapperTest {
         // Assert
         assertEquals(deleteLog.getId(), dto.getId());
         assertEquals(deleteLog.getClientId(), dto.getClientId());
+        assertNotNull(dto.getClientName());
         assertEquals(deleteLog.getAgentId(), dto.getAgentId());
-        assertEquals(deleteLog.getDateTime(), dto.getDateTime());
-        assertEquals("Deleted profile for " + deleteLog.getClientId(), dto.getMessage());
+        assertEquals(deleteLog.getDateTime().toString(), dto.getDateTime());
     }
 
     @Test
@@ -159,9 +162,12 @@ public class LogMapperTest {
         // Assert
         assertEquals(verificationLog.getId(), dto.getId());
         assertEquals(verificationLog.getClientId(), dto.getClientId());
+        assertNotNull(dto.getClientName());
         assertEquals(verificationLog.getAgentId(), dto.getAgentId());
-        assertEquals(verificationLog.getDateTime(), dto.getDateTime());
-        assertEquals("Verified profile for " + verificationLog.getClientId(), dto.getMessage());
+        assertEquals(verificationLog.getDateTime().toString(), dto.getDateTime());
+        assertEquals(verificationLog.getAttributeName(), dto.getAttributeName());
+        assertEquals(verificationLog.getBeforeValue(), dto.getBeforeValue());
+        assertEquals(verificationLog.getAfterValue(), dto.getAfterValue());
     }
 
     @Test
@@ -172,9 +178,9 @@ public class LogMapperTest {
         // Assert
         assertEquals(accountLog.getId(), dto.getId());
         assertEquals(accountLog.getClientId(), dto.getClientId());
+        assertNotNull(dto.getClientName());
         assertEquals(accountLog.getAgentId(), dto.getAgentId());
-        assertEquals(accountLog.getDateTime(), dto.getDateTime());
-        assertEquals("Created account for " + accountLog.getClientId(), dto.getMessage());
+        assertEquals(accountLog.getDateTime().toString(), dto.getDateTime());
     }
 
     @Test
@@ -190,8 +196,9 @@ public class LogMapperTest {
         for (int i = 0; i < logs.size(); i++) {
             assertEquals(logs.get(i).getId(), dtos.get(i).getId());
             assertEquals(logs.get(i).getClientId(), dtos.get(i).getClientId());
+            assertNotNull(dtos.get(i).getClientName());
             assertEquals(logs.get(i).getAgentId(), dtos.get(i).getAgentId());
-            assertEquals(logs.get(i).getDateTime(), dtos.get(i).getDateTime());
+            assertEquals(logs.get(i).getDateTime().toString(), dtos.get(i).getDateTime());
         }
     }
 }

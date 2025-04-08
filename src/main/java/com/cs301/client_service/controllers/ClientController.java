@@ -1,14 +1,21 @@
 package com.cs301.client_service.controllers;
 
 import com.cs301.client_service.dtos.ClientDTO;
+import com.cs301.client_service.dtos.ClientListDTO;
+import com.cs301.client_service.dtos.VerificationResponseDTO;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.mappers.ClientMapper;
 import com.cs301.client_service.services.ClientService;
 
+import com.cs301.client_service.models.Client;
+
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +36,6 @@ public class ClientController {
     public ClientController(ClientService clientService, ClientMapper clientMapper) {
         this.clientService = clientService;
         this.clientMapper = clientMapper;
-        logger.info("ClientController initialized");
     }
 
     @PostMapping(
@@ -43,6 +49,29 @@ public class ClientController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping
+    public ResponseEntity<List<ClientListDTO>> getAllClients(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String searchQuery,
+            @RequestParam(required = false) String agentId) {
+        
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<Client> clientsPage;
+        
+        if (agentId != null && !agentId.isEmpty()) {
+            // If agentId is provided, use the combined search and agentId method
+            clientsPage = clientService.getClientsWithSearchAndAgentId(agentId, searchQuery, pageable);
+        } else {
+            // Otherwise, use the existing method for all clients with optional search
+            clientsPage = clientService.getAllClientsPaginated(pageable, searchQuery);
+        }
+        
+        List<ClientListDTO> clientDTOs = clientMapper.toListDtoList(clientsPage.getContent());
+        
+        return ResponseEntity.ok(clientDTOs);
+    }
+
     @GetMapping("/{clientId}")
     public ResponseEntity<ClientDTO> getClient(@PathVariable String clientId) {
         var client = clientService.getClient(clientId);
@@ -51,11 +80,16 @@ public class ClientController {
     }
     
     @GetMapping("/agent/{agentId}")
-    public ResponseEntity<List<ClientDTO>> getClientsByAgentId(@PathVariable String agentId) {
-        var clients = clientService.getClientsByAgentId(agentId);
-        var clientDTOs = clients.stream()
-                .map(clientMapper::toDto)
-                .toList();
+    public ResponseEntity<List<ClientListDTO>> getClientsByAgentId(
+            @PathVariable String agentId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<com.cs301.client_service.models.Client> clientsPage = clientService.getClientsByAgentIdPaginated(agentId, pageable);
+        
+        List<ClientListDTO> clientDTOs = clientMapper.toListDtoList(clientsPage.getContent());
+        
         return ResponseEntity.ok(clientDTOs);
     }
 
@@ -80,14 +114,14 @@ public class ClientController {
      * This changes their status from PENDING to VERIFIED
      */
     @PostMapping("/{clientId}/verify")
-    public ResponseEntity<Map<String, Boolean>> verifyClient(@PathVariable String clientId) {
+    public ResponseEntity<VerificationResponseDTO> verifyClient(@PathVariable String clientId) {
         try {
             clientService.verifyClient(clientId);
-            return ResponseEntity.ok(Map.of(VERIFIED, true));
+            return ResponseEntity.ok(VerificationResponseDTO.builder().verified(true).build());
         } catch (ClientNotFoundException ex) {
             // Return a consistent response format for the not found case
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of(VERIFIED, false));
+                    .body(VerificationResponseDTO.builder().verified(false).build());
         }
     }
 }

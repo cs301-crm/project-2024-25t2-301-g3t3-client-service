@@ -2,6 +2,10 @@ package com.cs301.client_service.mappers;
 
 import com.cs301.client_service.dtos.LogDTO;
 import com.cs301.client_service.models.Log;
+import com.cs301.client_service.models.Client;
+import com.cs301.client_service.repositories.ClientRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -10,22 +14,86 @@ import java.util.stream.Collectors;
 
 @Component
 public class LogMapper {
+    @Autowired
+    private ClientRepository clientRepository;
 
     /**
      * Convert a Log entity to a LogDTO with a simplified message
      */
     public LogDTO toDTO(Log log) {
+        // Generate client name from clientId
+        String clientId = log.getClientId() != null ? log.getClientId() : "";
+        final StringBuilder clientNameBuilder = new StringBuilder();
+        
+        if (!clientId.isEmpty()) {
+            // Use findById() which returns Optional and handle the case where client might not exist
+            clientRepository.findById(clientId).ifPresent(client -> 
+                clientNameBuilder.append(client.getFirstName()).append(" ").append(client.getLastName())
+            );
+        }
+
+        // Generate message based on log type and attributes
+        String message = generateMessage(log);
+            
         return LogDTO.builder()
                 .id(log.getId())
-                .message(generateSimplifiedMessage(log))
-                .clientId(log.getClientId())
                 .agentId(log.getAgentId())
-                .dateTime(log.getDateTime())
+                .clientId(log.getClientId())
+                .clientName(clientNameBuilder.toString())
+                .crudType(log.getCrudType() != null ? log.getCrudType().name() : null)
+                .dateTime(log.getDateTime() != null ? log.getDateTime().toString() : null)
                 .attributeName(log.getAttributeName())
                 .beforeValue(log.getBeforeValue())
                 .afterValue(log.getAfterValue())
-                .crudType(log.getCrudType() != null ? log.getCrudType().name() : null)
+                .message(message)
                 .build();
+    }
+
+    /**
+     * Generate a human-readable message based on the log type and attributes
+     */
+    private String generateMessage(Log log) {
+        if (log.getCrudType() == null) {
+            return "Unknown operation";
+        }
+
+        String operation = log.getCrudType().name().toLowerCase();
+        String entityType = determineEntityType(log.getAttributeName());
+        
+        switch (log.getCrudType()) {
+            case CREATE:
+                return String.format("Created %s for %s", entityType, log.getClientId());
+            case READ:
+                return String.format("Retrieved %s for %s", entityType, log.getClientId());
+            case UPDATE:
+                return String.format("Updated %s for %s", entityType, log.getClientId());
+            case DELETE:
+                return String.format("Deleted %s for %s", entityType, log.getClientId());
+            default:
+                return String.format("%s operation on %s for %s", operation, entityType, log.getClientId());
+        }
+    }
+
+    /**
+     * Determine the type of entity based on the attribute name
+     */
+    private String determineEntityType(String attributeName) {
+        if (attributeName == null) {
+            return "entity";
+        }
+        
+        // If the attribute name is a UUID, it's likely an account
+        if (attributeName.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            return "account";
+        }
+        
+        // If the attribute name contains specific fields, it's likely a profile
+        if (attributeName.contains("firstName") || attributeName.contains("lastName") || 
+            attributeName.contains("email") || attributeName.contains("phone")) {
+            return "profile";
+        }
+        
+        return "entity";
     }
 
     /**
@@ -35,52 +103,5 @@ public class LogMapper {
         return logs.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * Generate a simplified message based on the log details
-     */
-    private String generateSimplifiedMessage(Log log) {
-        // Determine if this is an account-related log or a client-related log
-        boolean isAccountLog = false;
-        
-        // Check if the beforeValue or afterValue contains "accountId" or "accountType"
-        if ((log.getBeforeValue() != null && (log.getBeforeValue().contains("accountId") || 
-                                             log.getBeforeValue().contains("accountType"))) ||
-            (log.getAfterValue() != null && (log.getAfterValue().contains("accountId") || 
-                                           log.getAfterValue().contains("accountType")))) {
-            isAccountLog = true;
-        }
-        
-        String entityType = isAccountLog ? "account" : "profile";
-        
-        switch (log.getCrudType()) {
-            case CREATE:
-                return "Created " + entityType + " for " + log.getClientId();
-                
-            case READ:
-                return "Retrieved " + entityType + " for " + log.getClientId();
-                
-            case UPDATE:
-                // For verification status updates
-                if (log.getAttributeName() != null && log.getAttributeName().contains("verificationStatus")) {
-                    return "Verified " + entityType + " for " + log.getClientId();
-                }
-                
-                // For regular updates, list the changed attributes
-                if (log.getAttributeName() != null && !log.getAttributeName().isEmpty() && 
-                    !log.getAttributeName().equals(log.getClientId())) {
-                    String attributes = log.getAttributeName().replace("|", ", ");
-                    return "Updated " + attributes + " for " + log.getClientId();
-                }
-                
-                return "Updated " + entityType + " for " + log.getClientId();
-                
-            case DELETE:
-                return "Deleted " + entityType + " for " + log.getClientId();
-                
-            default:
-                return "Operation on " + entityType + " for " + log.getClientId();
-        }
     }
 }

@@ -2,6 +2,7 @@ package com.cs301.client_service.mappers;
 
 import com.cs301.client_service.constants.VerificationStatus;
 import com.cs301.client_service.dtos.ClientDTO;
+import com.cs301.client_service.dtos.ClientListDTO;
 import com.cs301.client_service.models.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,18 +10,14 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 public class ClientMapper {
     private static final Logger logger = LoggerFactory.getLogger(ClientMapper.class);
-
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
-    private final AccountMapper accountMapper;
-
-    public ClientMapper(AccountMapper accountMapper) {
-        this.accountMapper = accountMapper;
-    }
 
     /**
      * Converts Client model to ClientDTO
@@ -30,7 +27,7 @@ public class ClientMapper {
             return null;
         }
 
-        ClientDTO dto = ClientDTO.builder()
+        return ClientDTO.builder()
                 .clientId(model.getClientId())
                 .firstName(model.getFirstName())
                 .lastName(model.getLastName())
@@ -47,15 +44,6 @@ public class ClientMapper {
                 .agentId(model.getAgentId())
                 .verificationStatus(model.getVerificationStatus())
                 .build();
-
-        // Handle accounts safely
-        if (model.getAccounts() != null && !model.getAccounts().isEmpty()) {
-            dto.setAccounts(model.getAccounts().stream()
-                    .map(accountMapper::toDto)
-                    .collect(Collectors.toList()));
-        }
-
-        return dto;
     }
 
     /**
@@ -89,13 +77,34 @@ public class ClientMapper {
             model.setVerificationStatus(dto.getVerificationStatus());
         }
 
-        // Handle accounts safely
-        if (dto.getAccounts() != null && !dto.getAccounts().isEmpty()) {
-            model.setAccounts(dto.getAccounts().stream()
-                    .map(accountMapper::toModel)
-                    .collect(Collectors.toList()));
-        }
-
         return model;
+    }
+    
+    /**
+     * Converts Client model to simplified ClientListDTO
+     */
+    public ClientListDTO toListDto(Client model) {
+        if (model == null) {
+            return null;
+        }
+        
+        return ClientListDTO.builder()
+                .clientId(model.getClientId())
+                .firstName(model.getFirstName())
+                .lastName(model.getLastName())
+                .build();
+    }
+    
+    /**
+     * Converts a list of Client models to a list of ClientListDTOs
+     */
+    public List<ClientListDTO> toListDtoList(List<Client> models) {
+        if (models == null) {
+            return Collections.emptyList();
+        }
+        
+        return models.stream()
+                .map(this::toListDto)
+                .collect(Collectors.toList());
     }
 }

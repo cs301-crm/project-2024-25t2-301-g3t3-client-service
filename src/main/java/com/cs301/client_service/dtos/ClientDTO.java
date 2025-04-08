@@ -8,13 +8,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClientDTO {
+    @NotBlank
     private String clientId;
 
     @NotBlank
@@ -63,9 +62,9 @@ public class ClientDTO {
     @Size(min = 9, max = 9)
     private String nric;
     
+    @NotBlank
     private String agentId;
     
+    @NotBlank
     private VerificationStatus verificationStatus;
-
-    private List<AccountDTO> accounts;
 }

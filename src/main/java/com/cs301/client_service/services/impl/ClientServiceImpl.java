@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,11 +62,32 @@ public class ClientServiceImpl implements ClientService {
     public List<Client> getAllClients() {
         return clientRepository.findAll();
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Client> getAllClientsPaginated(Pageable pageable, String search) {
+        if (search != null && !search.trim().isEmpty()) {
+            return clientRepository.findAllWithSearch(search.trim(), pageable);
+        }
+        return clientRepository.findAll(pageable);
+    }
 
     @Override
     @Transactional(readOnly = true)
     public List<Client> getClientsByAgentId(String agentId) {
         return clientRepository.findByAgentId(agentId);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Client> getClientsByAgentIdPaginated(String agentId, Pageable pageable) {
+        return clientRepository.findByAgentId(agentId, pageable);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Client> getClientsWithSearchAndAgentId(String agentId, String searchQuery, Pageable pageable) {
+        return clientRepository.findWithSearchAndAgentId(agentId, searchQuery, pageable);
     }
 
     @Override

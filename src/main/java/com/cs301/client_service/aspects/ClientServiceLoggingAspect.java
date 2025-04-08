@@ -58,44 +58,11 @@ public class ClientServiceLoggingAspect extends DatabaseLoggingAspect {
 
     @Override
     protected Map<String, Map.Entry<String, String>> compareEntities(Object oldEntity, Object newEntity) {
-        Map<String, Map.Entry<String, String>> changes = new HashMap<>();
+        // Use the LoggingUtils.compareEntities method to compare all properties of the entities
+        Map<String, Map.Entry<String, String>> changes = com.cs301.client_service.utils.LoggingUtils.compareEntities(oldEntity, newEntity);
         
-        if (oldEntity instanceof Client && newEntity instanceof Client) {
-            Client oldClient = (Client) oldEntity;
-            Client newClient = (Client) newEntity;
-            
-            // Compare firstName
-            if (!oldClient.getFirstName().equals(newClient.getFirstName())) {
-                changes.put("firstName", new AbstractMap.SimpleEntry<>(
-                    oldClient.getFirstName(), newClient.getFirstName()));
-            }
-            
-            // Compare lastName
-            if (!oldClient.getLastName().equals(newClient.getLastName())) {
-                changes.put("lastName", new AbstractMap.SimpleEntry<>(
-                    oldClient.getLastName(), newClient.getLastName()));
-            }
-            
-            // Compare address
-            if (!oldClient.getAddress().equals(newClient.getAddress())) {
-                changes.put("address", new AbstractMap.SimpleEntry<>(
-                    oldClient.getAddress(), newClient.getAddress()));
-            }
-            
-            // Compare phoneNumber
-            if (!oldClient.getPhoneNumber().equals(newClient.getPhoneNumber())) {
-                changes.put("phoneNumber", new AbstractMap.SimpleEntry<>(
-                    oldClient.getPhoneNumber(), newClient.getPhoneNumber()));
-            }
-            
-            // Compare city
-            if (!oldClient.getCity().equals(newClient.getCity())) {
-                changes.put("city", new AbstractMap.SimpleEntry<>(
-                    oldClient.getCity(), newClient.getCity()));
-            }
-            
-            // Add more field comparisons as needed
-        }
+        // Remove clientId from changes since it's not actually changing
+        changes.remove("clientId");
         
         return changes;
     }
@@ -151,31 +118,48 @@ public class ClientServiceLoggingAspect extends DatabaseLoggingAspect {
     }
 
     /**
-     * Log after client update
+     * Log around client update
      * 
      * Format:
      * - attributeName: pipe-separated attribute names (e.g., "firstName|address")
      * - beforeValue: pipe-separated values (e.g., "LEE|ABC")
      * - afterValue: pipe-separated values (e.g., "TAN|XX")
      */
-    @AfterReturning(pointcut = "clientUpdate()", returning = "result")
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void logAfterClientUpdate(JoinPoint joinPoint, Client result) {
+    @org.aspectj.lang.annotation.Around("clientUpdate()")
+    public Object logAroundClientUpdate(org.aspectj.lang.ProceedingJoinPoint joinPoint) throws Throwable {
         try {
+            // Extract method arguments
             Object[] args = getArgs(joinPoint);
             String clientId = (String) args[0];
-            Client newClient = result; // Use the result which is the updated client
             
-            // Get the existing client to compare with
+            // Get the client BEFORE the update
             Client oldClient = clientRepository.findById(clientId).orElse(null);
             
             if (oldClient == null) {
                 logger.warn("Client not found for update with ID: {}", clientId);
-                return;
+                return joinPoint.proceed(); // Just proceed with the method execution
             }
             
+            // Log the update attempt
+            logger.info("Attempting to log update for client with ID: {}", clientId);
+            
+            // Debug logging for old client
+            logger.debug("Old client before update: {}", oldClient);
+            
+            // Proceed with the method execution (this performs the actual update)
+            Object result = joinPoint.proceed();
+            
+            // The result is the updated client
+            Client updatedClient = (Client) result;
+            
+            // Debug logging for updated client
+            logger.debug("Updated client after update: {}", updatedClient);
+            
             // Compare old and new clients to determine what changed
-            Map<String, Map.Entry<String, String>> changes = compareEntities(oldClient, newClient);
+            Map<String, Map.Entry<String, String>> changes = compareEntities(oldClient, updatedClient);
+            
+            // Debug logging for changes
+            logger.debug("Changes detected: {}", changes);
             
             // Only create a log if there were changes
             if (!changes.isEmpty()) {
@@ -206,7 +190,7 @@ public class ClientServiceLoggingAspect extends DatabaseLoggingAspect {
                 // Create and save the log entry
                 Log log = createLogEntry(
                     clientId,
-                    newClient,
+                    updatedClient,
                     Log.CrudType.UPDATE,
                     attributeNames.toString(),
                     beforeValues.toString(),
@@ -215,9 +199,14 @@ public class ClientServiceLoggingAspect extends DatabaseLoggingAspect {
                 
                 logRepository.save(log);
                 logger.debug("Logged update for client with ID: {}", clientId);
+            } else {
+                logger.warn("No changes detected for client update with ID: {}", clientId);
             }
+            
+            return result;
         } catch (Exception e) {
             logger.error("Error logging client update", e);
+            return joinPoint.proceed(); // Still proceed with the method execution even if logging fails
         }
     }
 
