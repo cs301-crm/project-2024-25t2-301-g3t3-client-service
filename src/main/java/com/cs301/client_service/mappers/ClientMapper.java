@@ -17,13 +17,7 @@ import java.util.stream.Collectors;
 @Component
 public class ClientMapper {
     private static final Logger logger = LoggerFactory.getLogger(ClientMapper.class);
-
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
-    private final AccountMapper accountMapper;
-
-    public ClientMapper(AccountMapper accountMapper) {
-        this.accountMapper = accountMapper;
-    }
 
     /**
      * Converts Client model to ClientDTO
@@ -33,7 +27,7 @@ public class ClientMapper {
             return null;
         }
 
-        ClientDTO dto = ClientDTO.builder()
+        return ClientDTO.builder()
                 .clientId(model.getClientId())
                 .firstName(model.getFirstName())
                 .lastName(model.getLastName())
@@ -50,15 +44,6 @@ public class ClientMapper {
                 .agentId(model.getAgentId())
                 .verificationStatus(model.getVerificationStatus())
                 .build();
-
-        // Handle accounts safely
-        if (model.getAccounts() != null && !model.getAccounts().isEmpty()) {
-            dto.setAccounts(model.getAccounts().stream()
-                    .map(accountMapper::toDto)
-                    .collect(Collectors.toList()));
-        }
-
-        return dto;
     }
 
     /**
@@ -90,13 +75,6 @@ public class ClientMapper {
             model.setVerificationStatus(VerificationStatus.PENDING);
         } else {
             model.setVerificationStatus(dto.getVerificationStatus());
-        }
-
-        // Handle accounts safely
-        if (dto.getAccounts() != null && !dto.getAccounts().isEmpty()) {
-            model.setAccounts(dto.getAccounts().stream()
-                    .map(accountMapper::toModel)
-                    .collect(Collectors.toList()));
         }
 
         return model;
