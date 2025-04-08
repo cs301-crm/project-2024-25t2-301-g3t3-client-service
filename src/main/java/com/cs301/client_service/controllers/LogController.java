@@ -6,6 +6,10 @@ import com.cs301.client_service.models.Log;
 import com.cs301.client_service.repositories.LogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,26 +31,71 @@ public class LogController {
     }
 
     @GetMapping
-    public ResponseEntity<List<LogDTO>> getAllLogs() {
-        var logs = logRepository.findAll();
-        return ResponseEntity.ok(logMapper.toDTOList(logs));
+    public ResponseEntity<List<LogDTO>> getAllLogs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
+        Page<Log> logsPage = logRepository.findAll(pageable);
+        
+        List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
+        
+        return ResponseEntity.ok(logDTOs);
     }
 
-    @GetMapping("/client/{clientId}")
-    public ResponseEntity<List<LogDTO>> getLogsByClientId(@PathVariable String clientId) {
-        var logs = logRepository.findByClientId(clientId);
-        return ResponseEntity.ok(logMapper.toDTOList(logs));
+    @GetMapping("/client")
+    public ResponseEntity<List<LogDTO>> getLogsByClientId(
+            @RequestParam String clientId,
+            @RequestParam(required = false) String searchQuery,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
+        Page<Log> logsPage;
+        
+        if (searchQuery != null && !searchQuery.isEmpty()) {
+            logsPage = logRepository.findByClientIdWithSearch(clientId, searchQuery, pageable);
+        } else {
+            logsPage = logRepository.findByClientId(clientId, pageable);
+        }
+        
+        List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
+        
+        return ResponseEntity.ok(logDTOs);
     }
 
     @GetMapping("/type/{crudType}")
-    public ResponseEntity<List<LogDTO>> getLogsByCrudType(@PathVariable Log.CrudType crudType) {
-        var logs = logRepository.findByCrudType(crudType);
-        return ResponseEntity.ok(logMapper.toDTOList(logs));
+    public ResponseEntity<List<LogDTO>> getLogsByCrudType(
+            @PathVariable Log.CrudType crudType,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
+        Page<Log> logsPage = logRepository.findByCrudType(crudType, pageable);
+        
+        List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
+        
+        return ResponseEntity.ok(logDTOs);
     }
     
-    @GetMapping("/agent/{agentId}")
-    public ResponseEntity<List<LogDTO>> getLogsByAgentId(@PathVariable String agentId) {
-        var logs = logRepository.findByAgentId(agentId);
-        return ResponseEntity.ok(logMapper.toDTOList(logs));
+    @GetMapping("/agent")
+    public ResponseEntity<List<LogDTO>> getLogsByAgentId(
+            @RequestParam String agentId,
+            @RequestParam(required = false) String searchQuery,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
+        Page<Log> logsPage;
+        
+        if (searchQuery != null && !searchQuery.isEmpty()) {
+            logsPage = logRepository.findByAgentIdWithSearch(agentId, searchQuery, pageable);
+        } else {
+            logsPage = logRepository.findByAgentId(agentId, pageable);
+        }
+        
+        List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
+        
+        return ResponseEntity.ok(logDTOs);
     }
 }
