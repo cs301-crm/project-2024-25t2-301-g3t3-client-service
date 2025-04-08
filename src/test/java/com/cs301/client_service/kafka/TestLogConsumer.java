@@ -27,13 +27,27 @@ public class TestLogConsumer {
     public static void main(String[] args) {
         System.out.println("Starting Log Test Consumer...");
         
+        // Generate a fixed group ID for this session
+        String sessionGroupId = GROUP_ID + "-fixed-" + UUID.randomUUID();
+        System.out.println("Using consumer group ID: " + sessionGroupId);
+        
         // Configure consumer properties
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, GROUP_ID + "-" + UUID.randomUUID());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, sessionGroupId);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaProtobufDeserializer.class.getName());
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        
+        // Set to latest to see only new messages
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        
+        // Add more consumer configs that might help
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+        props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
+        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
+        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "10000");
+        
+        // Schema registry config
         props.put("schema.registry.url", SCHEMA_REGISTRY_URL);
         props.put("specific.protobuf.value.type", Log.class.getName());
 
@@ -42,14 +56,23 @@ public class TestLogConsumer {
             // Subscribe to topic
             consumer.subscribe(Collections.singletonList(TOPIC));
             System.out.println("Subscribed to topic: " + TOPIC);
-            System.out.println("Starting to poll for messages...");
+            System.out.println("Waiting for new messages (offset: latest)...");
+            System.out.println("Press Ctrl+C to exit");
             
             // Poll for new messages
             while (true) {
                 ConsumerRecords<String, Log> records = consumer.poll(Duration.ofMillis(1000));
                 
-                for (ConsumerRecord<String, Log> record : records) {
-                    printMessage(record);
+                if (records.count() > 0) {
+                    System.out.println("\nReceived " + records.count() + " record(s)");
+                    
+                    for (ConsumerRecord<String, Log> record : records) {
+                        printMessage(record);
+                    }
+                } else {
+                    // Print a dot to show it's still running
+                    System.out.print(".");
+                    System.out.flush();
                 }
             }
         } catch (Exception e) {
