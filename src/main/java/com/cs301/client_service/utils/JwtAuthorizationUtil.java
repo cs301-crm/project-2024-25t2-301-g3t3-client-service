@@ -3,6 +3,8 @@ package com.cs301.client_service.utils;
 import com.cs301.client_service.exceptions.UnauthorizedAccessException;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -12,7 +14,9 @@ public class JwtAuthorizationUtil {
 
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
     private static final String ROLE_AGENT = "ROLE_AGENT";
-    private static final String JWT_SUBJECT_CLAIM = "sub";
+    public static final String JWT_SUBJECT_CLAIM = "sub";
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthorizationUtil.class);
 
     private JwtAuthorizationUtil() {
         throw new IllegalStateException("Utility class");
@@ -25,12 +29,13 @@ public class JwtAuthorizationUtil {
      */
     public static boolean isAdmin(Authentication authentication) {
         if (authentication == null) {
+            logger.debug("Authentication is null in isAdmin check");
             return false;
         }
-
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        return authorities.stream()
-                .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()));
+        
+        boolean isAdmin = hasRole(authentication, ROLE_ADMIN);
+        logger.debug("isAdmin check result: {}", isAdmin);
+        return isAdmin;
     }
 
     /**
@@ -40,12 +45,13 @@ public class JwtAuthorizationUtil {
      */
     public static boolean isAgent(Authentication authentication) {
         if (authentication == null) {
+            logger.debug("Authentication is null in isAgent check");
             return false;
         }
-
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        return authorities.stream()
-                .anyMatch(a -> ROLE_AGENT.equals(a.getAuthority()));
+        
+        boolean isAgent = hasRole(authentication, ROLE_AGENT);
+        logger.debug("isAgent check result: {}", isAgent);
+        return isAgent;
     }
 
     /**
@@ -55,26 +61,42 @@ public class JwtAuthorizationUtil {
      * @throws UnauthorizedAccessException if the agent does not have access to the client
      */
     public static void validateAgentAccess(Authentication authentication, Client client) {
-        if (authentication == null || client == null) {
-            throw new UnauthorizedAccessException("Invalid authentication or client");
+        if (authentication == null) {
+            logger.warn("Authentication is null during access validation");
+            throw new UnauthorizedAccessException("Authentication required");
         }
+        
+        logger.debug("Validating access for client with agentId: {}", client.getAgentId());
 
-        // Admin can access any client
+        // If admin, always allow access
         if (isAdmin(authentication)) {
+            logger.debug("Access granted: user is ADMIN");
             return;
         }
 
-        // Agent can only access their own clients
+        // If agent, only allow access to clients assigned to them
         if (isAgent(authentication)) {
             String agentId = JWTUtil.getClaim(authentication, JWT_SUBJECT_CLAIM);
+            logger.debug("Agent access check - JWT subject: {}, Client agentId: {}", agentId, client.getAgentId());
+            
+            if (agentId == null || agentId.isEmpty()) {
+                logger.warn("Agent ID from JWT is null or empty");
+                throw new UnauthorizedAccessException("Invalid agent identifier");
+            }
+            
             if (!agentId.equals(client.getAgentId())) {
+                logger.warn("Access denied: Agent {} attempted to access client of agent {}", 
+                            agentId, client.getAgentId());
                 throw new UnauthorizedAccessException("Agent does not have access to this client");
             }
+            
+            logger.debug("Access granted: Agent ID matches client's agentId");
             return;
         }
 
         // If not admin or agent, deny access
-        throw new UnauthorizedAccessException("Insufficient permissions to access client data");
+        logger.warn("Access denied: User has neither ADMIN nor AGENT role");
+        throw new UnauthorizedAccessException("Insufficient permissions");
     }
 
     /**
@@ -113,9 +135,26 @@ public class JwtAuthorizationUtil {
      */
     public static String getAgentId(Authentication authentication) {
         if (authentication == null) {
-            throw new IllegalArgumentException("Authentication cannot be null");
+            logger.warn("Authentication is null in getAgentId");
+            return null;
         }
         
-        return JWTUtil.getClaim(authentication, JWT_SUBJECT_CLAIM);
+        String agentId = JWTUtil.getClaim(authentication, JWT_SUBJECT_CLAIM);
+        logger.debug("Retrieved agent ID from JWT: {}", agentId);
+        return agentId;
+    }
+
+    // Private helper to check for a specific role
+    private static boolean hasRole(Authentication authentication, String role) {
+        if (authentication == null || authentication.getAuthorities() == null) {
+            return false;
+        }
+        
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        logger.debug("User has the following roles: {}", authorities);
+        
+        return authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role::equals);
     }
 } 
