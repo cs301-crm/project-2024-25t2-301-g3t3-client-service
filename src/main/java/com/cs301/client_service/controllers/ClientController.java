@@ -38,10 +38,7 @@ public class ClientController {
         this.clientMapper = clientMapper;
     }
 
-    @PostMapping(
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
+    @PostMapping
     public ResponseEntity<ClientDTO> createClient(@Valid @RequestBody ClientDTO clientDTO) {
         var clientModel = clientMapper.toModel(clientDTO);
         var savedClient = clientService.createClient(clientModel);
