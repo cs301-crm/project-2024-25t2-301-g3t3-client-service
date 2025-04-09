@@ -38,11 +38,13 @@ public interface LogRepository extends JpaRepository<Log, String> {
     
     @Query("SELECT l FROM Log l WHERE l.clientId = :clientId AND " +
            "(:search IS NULL OR " +
-           "LOWER(l.id) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.id as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(l.attributeName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(l.beforeValue) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(l.afterValue) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(l.crudType) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "LOWER(l.crudType) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Log> findByClientIdWithSearch(
             @Param("clientId") String clientId,
             @Param("search") String search,
@@ -50,11 +52,13 @@ public interface LogRepository extends JpaRepository<Log, String> {
     
     @Query("SELECT l FROM Log l WHERE l.agentId = :agentId AND " +
            "(:search IS NULL OR " +
-           "LOWER(l.id) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.id as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(l.attributeName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(l.beforeValue) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(l.afterValue) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(l.crudType) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "LOWER(l.crudType) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Log> findByAgentIdWithSearch(
             @Param("agentId") String agentId,
             @Param("search") String search,

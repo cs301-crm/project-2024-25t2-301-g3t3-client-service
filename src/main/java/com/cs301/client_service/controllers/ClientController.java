@@ -69,13 +69,13 @@ public class ClientController {
     }
 
     /**
-     * Get all clients with pagination and optional filtering
-     * Requires: authenticated user
-     * - ROLE_AGENT: only retrieve clients where agentId from JWT subj == client's agentID
-     * - ROLE_ADMIN: retrieve everything
+     * Get clients with pagination and optional filtering
+     * - For ROLE_AGENT: Only returns clients assigned to the authenticated agent
+     * - For ROLE_ADMIN: Returns all clients, can be filtered by agentId
+     * - Search query applies to client fields (name, email, etc.)
      */
     @GetMapping
-    public ResponseEntity<List<ClientListDTO>> getAllClients(
+    public ResponseEntity<List<ClientListDTO>> getClients(
             Authentication authentication,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit,
@@ -85,22 +85,29 @@ public class ClientController {
         Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Client> clientsPage;
         
-        // If user is an agent, only show their clients
+        // For agents, always filter by their own agentId (ignore any provided agentId)
         if (JwtAuthorizationUtil.isAgent(authentication)) {
             String agentIdFromJwt = JwtAuthorizationUtil.getAgentId(authentication);
+            logger.debug("Agent request: Filtering clients by agent ID from JWT: {}", agentIdFromJwt);
             clientsPage = clientService.getClientsWithSearchAndAgentId(agentIdFromJwt, searchQuery, pageable);
-        } 
-        // If user is an admin and an agentId is provided, filter by that agentId
-        else if (JwtAuthorizationUtil.isAdmin(authentication) && agentId != null && !agentId.isEmpty()) {
-            clientsPage = clientService.getClientsWithSearchAndAgentId(agentId, searchQuery, pageable);
         }
-        // If user is an admin and no agentId is provided, return all clients
+        // For admins, allow filtering by provided agentId or show all
+        else if (JwtAuthorizationUtil.isAdmin(authentication)) {
+            if (agentId != null && !agentId.isEmpty()) {
+                logger.debug("Admin request: Filtering clients by provided agent ID: {}", agentId);
+                clientsPage = clientService.getClientsWithSearchAndAgentId(agentId, searchQuery, pageable);
+            } else {
+                logger.debug("Admin request: Retrieving all clients");
+                clientsPage = clientService.getAllClientsPaginated(pageable, searchQuery);
+            }
+        } 
+        // In case of invalid jwt
         else {
-            clientsPage = clientService.getAllClientsPaginated(pageable, searchQuery);
+            logger.warn("Unauthorized access attempt to client list");
+            throw new UnauthorizedAccessException("Insufficient permissions to access client data");
         }
         
         List<ClientListDTO> clientDTOs = clientMapper.toListDtoList(clientsPage.getContent());
-        
         return ResponseEntity.ok(clientDTOs);
     }
 

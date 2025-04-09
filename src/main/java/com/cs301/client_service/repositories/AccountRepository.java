@@ -32,14 +32,16 @@ public interface AccountRepository extends JpaRepository<Account, String> {
            "(:type IS NULL OR a.accountType = :type) AND " +
            "(:status IS NULL OR a.accountStatus = :status) AND " +
            "(:search IS NULL OR " +
-           "LOWER(a.accountId) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.accountId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(a.currency) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(a.branchId) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(a.client.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(a.client.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(a.client.emailAddress) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(a.client.phoneNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(a.client.nric) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "LOWER(a.client.nric) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Account> findWithSearchAndFilters(
             @Param("agentId") String agentId,
             @Param("type") AccountType type,

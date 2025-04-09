@@ -16,7 +16,7 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     
     @Query("SELECT c FROM Client c WHERE " +
            "(:search IS NULL OR " +
-           "LOWER(c.clientId) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(c.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.emailAddress) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
@@ -26,13 +26,14 @@ public interface ClientRepository extends JpaRepository<Client, String> {
            "LOWER(c.state) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.country) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.postalCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(c.nric) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "LOWER(c.nric) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(c.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Client> findAllWithSearch(@Param("search") String search, Pageable pageable);
     
     @Query("SELECT c FROM Client c WHERE " +
            "(:agentId IS NULL OR c.agentId = :agentId) AND " +
            "(:search IS NULL OR " +
-           "LOWER(c.clientId) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(c.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.emailAddress) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
@@ -42,7 +43,8 @@ public interface ClientRepository extends JpaRepository<Client, String> {
            "LOWER(c.state) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.country) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.postalCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(c.nric) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "LOWER(c.nric) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(c.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Client> findWithSearchAndAgentId(
             @Param("agentId") String agentId,
             @Param("search") String search,
