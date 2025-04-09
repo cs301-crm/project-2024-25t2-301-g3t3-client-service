@@ -39,25 +39,12 @@ public abstract class BaseLoggingAspect {
     protected Log createLogEntry(String clientId, Object entity, Log.CrudType crudType, 
                                String attributeName, String beforeValue, String afterValue) {
         
-        // Get the client's full name if clientId is provided
-        String clientNameInfo = "";
-        if (clientId != null && !clientId.isEmpty()) {
-            try {
-                Client client = clientService.getClient(clientId);
-                if (client != null) {
-                    clientNameInfo = client.getFirstName() + " " + client.getLastName();
-                }
-            } catch (Exception e) {
-                logger.error("Error fetching client information for logging", e);
-            }
-        }
-        
         // For CREATE, READ, DELETE operations, store clientId in attributeName if not provided
         if ((crudType == Log.CrudType.CREATE || crudType == Log.CrudType.READ || crudType == Log.CrudType.DELETE) 
                 && (attributeName == null || attributeName.isEmpty())) {
                     return Log.builder()
                         .crudType(crudType)
-                        .attributeName(clientNameInfo.isEmpty() ? attributeName : clientNameInfo)
+                        .attributeName(clientId) // Just use the client ID without the name
                         .beforeValue("")
                         .afterValue("")
                         .agentId(LoggingUtils.getCurrentAgentId())
@@ -68,7 +55,7 @@ public abstract class BaseLoggingAspect {
         
         return Log.builder()
                 .crudType(crudType)
-                .attributeName(clientNameInfo.isEmpty() ? attributeName : attributeName + " (" + clientNameInfo + ")")
+                .attributeName(attributeName) // Just use the attribute name without adding client name
                 .beforeValue(beforeValue)
                 .afterValue(afterValue)
                 .agentId(LoggingUtils.getCurrentAgentId())

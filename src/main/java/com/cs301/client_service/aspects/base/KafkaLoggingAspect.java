@@ -74,8 +74,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
                 logCreateOperationToKafka(result, clientId, clientEmail);
             }
             
-            logger.debug("Published creation event to Kafka for {} with ID: {}", 
-                        getEntityType(), getEntityId(result));
+            // Creation event published to Kafka
         } catch (Exception e) {
             logger.error("Error publishing {} creation to Kafka", getEntityType().toLowerCase(), e);
         }
@@ -102,8 +101,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
                 logUpdateOperationToKafka(null, result, clientId, clientEmail, changes);
             }
             
-            logger.debug("Published update event to Kafka for {} with ID: {}", 
-                        getEntityType(), getEntityId(result));
+            // Update event published to Kafka
         } catch (Exception e) {
             logger.error("Error publishing {} update to Kafka", getEntityType().toLowerCase(), e);
         }
@@ -130,8 +128,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
             
             if (entity != null) {
                 logDeleteOperationToKafka(entity, clientId, clientEmail);
-                logger.debug("Published deletion event to Kafka for {} with ID: {}", 
-                            getEntityType(), entityId);
+                // Deletion event published to Kafka
             }
         } catch (Exception e) {
             logger.error("Error publishing {} deletion to Kafka", getEntityType().toLowerCase(), e);
@@ -143,7 +140,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
      */
     protected void logCreateOperationToKafka(Object entity, String clientId, String email) {
         try {
-            logger.debug("Publishing creation event to Kafka for entity with client ID: {}", clientId);
+            // Publishing creation event to Kafka
             
             String entityId = getMessageKey(entity);
             
@@ -171,7 +168,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
     protected void logUpdateOperationToKafka(Object oldEntity, Object newEntity, String clientId, String email, 
                                            Map<String, Map.Entry<String, String>> changes) {
         try {
-            logger.debug("Publishing update event to Kafka for entity with client ID: {}", clientId);
+            // Publishing update event to Kafka
             
             if (changes != null && !changes.isEmpty()) {
                 // Create a consolidated string of all attribute names
@@ -226,7 +223,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
      */
     protected void logDeleteOperationToKafka(Object entity, String clientId, String email) {
         try {
-            logger.debug("Publishing deletion event to Kafka for entity with client ID: {}", clientId);
+            // Publishing deletion event to Kafka
             
             String entityId = getMessageKey(entity);
             
@@ -253,7 +250,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
      */
     protected void logAccountOperationToKafka(Account account, String clientId, String email, String crudType) {
         try {
-            logger.debug("Publishing {} event to Kafka for account with client ID: {}", crudType, clientId);
+            // Publishing account event to Kafka
             
             String accountId = account.getAccountId();
             String accountType = account.getAccountType() != null ? account.getAccountType().toString() : "";
