@@ -7,6 +7,8 @@ import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.mappers.ClientMapper;
 import com.cs301.client_service.services.ClientService;
+import com.cs301.client_service.utils.JwtAuthorizationUtil;
+import com.cs301.client_service.utils.JWTUtil;
 
 import com.cs301.client_service.models.Client;
 
@@ -19,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,16 +41,30 @@ public class ClientController {
         this.clientMapper = clientMapper;
     }
 
+    /**
+     * Create a new client
+     * Requires: authenticated user
+     */
     @PostMapping
-    public ResponseEntity<ClientDTO> createClient(@Valid @RequestBody ClientDTO clientDTO) {
+    public ResponseEntity<ClientDTO> createClient(
+            Authentication authentication,
+            @Valid @RequestBody ClientDTO clientDTO) {
+        
         var clientModel = clientMapper.toModel(clientDTO);
         var savedClient = clientService.createClient(clientModel);
         var response = clientMapper.toDto(savedClient);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Get all clients with pagination and optional filtering
+     * Requires: authenticated user
+     * - ROLE_AGENT: only retrieve clients where agentId from JWT subj == client's agentID
+     * - ROLE_ADMIN: retrieve everything
+     */
     @GetMapping
     public ResponseEntity<List<ClientListDTO>> getAllClients(
+            Authentication authentication,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) String searchQuery,
@@ -56,11 +73,17 @@ public class ClientController {
         Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Client> clientsPage;
         
-        if (agentId != null && !agentId.isEmpty()) {
-            // If agentId is provided, use the combined search and agentId method
+        // If user is an agent, only show their clients
+        if (JwtAuthorizationUtil.isAgent(authentication)) {
+            String agentIdFromJwt = JwtAuthorizationUtil.getAgentId(authentication);
+            clientsPage = clientService.getClientsWithSearchAndAgentId(agentIdFromJwt, searchQuery, pageable);
+        } 
+        // If user is an admin and an agentId is provided, filter by that agentId
+        else if (JwtAuthorizationUtil.isAdmin(authentication) && agentId != null && !agentId.isEmpty()) {
             clientsPage = clientService.getClientsWithSearchAndAgentId(agentId, searchQuery, pageable);
-        } else {
-            // Otherwise, use the existing method for all clients with optional search
+        }
+        // If user is an admin and no agentId is provided, return all clients
+        else {
             clientsPage = clientService.getAllClientsPaginated(pageable, searchQuery);
         }
         
@@ -69,39 +92,93 @@ public class ClientController {
         return ResponseEntity.ok(clientDTOs);
     }
 
+    /**
+     * Get a client by ID
+     * Requires: authenticated user
+     * - ROLE_AGENT: can only access if agentId from JWT subj == client's agentID
+     * - ROLE_ADMIN: no requirements
+     */
     @GetMapping("/{clientId}")
-    public ResponseEntity<ClientDTO> getClient(@PathVariable String clientId) {
-        var client = clientService.getClient(clientId);
+    public ResponseEntity<ClientDTO> getClient(
+            Authentication authentication,
+            @PathVariable String clientId) {
+        
+        Client client = clientService.getClient(clientId);
+        
+        // Validate if the authenticated user has access to this client
+        JwtAuthorizationUtil.validateAgentAccess(authentication, client);
+        
         var response = clientMapper.toDto(client);
         return ResponseEntity.ok(response);
     }
     
+    /**
+     * Get clients by agent ID
+     * Requires: authenticated user
+     * - ROLE_AGENT: can only access if pathvariable agentId == JWT sub agentID
+     * - ROLE_ADMIN: no requirements
+     */
     @GetMapping("/agent/{agentId}")
     public ResponseEntity<List<ClientListDTO>> getClientsByAgentId(
+            Authentication authentication,
             @PathVariable String agentId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
+        // For agents, only allow accessing their own clients
+        if (JwtAuthorizationUtil.isAgent(authentication)) {
+            String agentIdFromJwt = JwtAuthorizationUtil.getAgentId(authentication);
+            if (!agentIdFromJwt.equals(agentId)) {
+                throw new UnauthorizedAccessException("Agent can only view clients assigned to them");
+            }
+        }
+        // Admin can access any agent's clients, no check needed
+        
         Pageable pageable = PageRequest.of(page - 1, limit);
-        Page<com.cs301.client_service.models.Client> clientsPage = clientService.getClientsByAgentIdPaginated(agentId, pageable);
+        Page<Client> clientsPage = clientService.getClientsByAgentIdPaginated(agentId, pageable);
         
         List<ClientListDTO> clientDTOs = clientMapper.toListDtoList(clientsPage.getContent());
         
         return ResponseEntity.ok(clientDTOs);
     }
 
+    /**
+     * Update a client
+     * Requires: authenticated user
+     * - ROLE_AGENT: can only access if agentId from JWT subj == client's agentID
+     * - ROLE_ADMIN: no requirements
+     */
     @PutMapping("/{clientId}")
     public ResponseEntity<ClientDTO> updateClient(
+            Authentication authentication,
             @PathVariable String clientId,
             @Valid @RequestBody ClientDTO clientDTO) {
+        
+        // Validate access before update
+        Client existingClient = clientService.getClient(clientId);
+        JwtAuthorizationUtil.validateAgentAccess(authentication, existingClient);
+        
         var clientModel = clientMapper.toModel(clientDTO);
         var updatedClient = clientService.updateClient(clientId, clientModel);
         var response = clientMapper.toDto(updatedClient);
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Delete a client
+     * Requires: authenticated user
+     * - ROLE_AGENT: can only access if agentId from JWT subj == client's agentID
+     * - ROLE_ADMIN: no requirements
+     */
     @DeleteMapping("/{clientId}")
-    public ResponseEntity<Void> deleteClient(@PathVariable String clientId) {
+    public ResponseEntity<Void> deleteClient(
+            Authentication authentication,
+            @PathVariable String clientId) {
+        
+        // Validate access before deletion
+        Client existingClient = clientService.getClient(clientId);
+        JwtAuthorizationUtil.validateAgentAccess(authentication, existingClient);
+        
         clientService.deleteClient(clientId);
         return ResponseEntity.noContent().build();
     }
@@ -109,6 +186,7 @@ public class ClientController {
     /**
      * Verify a client to activate their profile
      * This changes their status from PENDING to VERIFIED
+     * No authentication needed
      */
     @PostMapping("/{clientId}/verify")
     public ResponseEntity<VerificationResponseDTO> verifyClient(@PathVariable String clientId) {
