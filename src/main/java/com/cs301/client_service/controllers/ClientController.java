@@ -4,6 +4,7 @@ import com.cs301.client_service.dtos.ClientDTO;
 import com.cs301.client_service.dtos.ClientListDTO;
 import com.cs301.client_service.dtos.VerificationResponseDTO;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
+import com.cs301.client_service.exceptions.UnauthorizedAccessException;
 import com.cs301.client_service.exceptions.VerificationException;
 import com.cs301.client_service.mappers.ClientMapper;
 import com.cs301.client_service.services.ClientService;
