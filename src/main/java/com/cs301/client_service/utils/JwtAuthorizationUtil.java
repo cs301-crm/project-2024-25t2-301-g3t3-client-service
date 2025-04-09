@@ -12,8 +12,8 @@ import java.util.Collection;
 
 public class JwtAuthorizationUtil {
 
-    private static final String ROLE_ADMIN = "ROLE_ADMIN";
-    private static final String ROLE_AGENT = "ROLE_AGENT";
+    private static final String ROLE_ADMIN = "SCOPE_ROLE_ADMIN";
+    private static final String ROLE_AGENT = "SCOPE_ROLE_AGENT";
     public static final String JWT_SUBJECT_CLAIM = "sub";
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthorizationUtil.class);
