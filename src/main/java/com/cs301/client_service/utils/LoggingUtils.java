@@ -6,6 +6,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
@@ -49,6 +53,102 @@ public class LoggingUtils {
 
         Map<String, Map.Entry<String, String>> changes = new HashMap<>();
         
+        // Special handling for Client objects with explicit field comparison
+        if (oldEntity instanceof Client && newEntity instanceof Client) {
+            Client oldClient = (Client) oldEntity;
+            Client newClient = (Client) newEntity;
+            
+            // Explicitly check each field for Client objects
+            if (!equals(oldClient.getFirstName(), newClient.getFirstName())) {
+                changes.put("firstName", Map.entry(
+                    toString(oldClient.getFirstName()), 
+                    toString(newClient.getFirstName())));
+            }
+            
+            if (!equals(oldClient.getLastName(), newClient.getLastName())) {
+                changes.put("lastName", Map.entry(
+                    toString(oldClient.getLastName()), 
+                    toString(newClient.getLastName())));
+            }
+            
+            if (!equals(oldClient.getEmailAddress(), newClient.getEmailAddress())) {
+                changes.put("emailAddress", Map.entry(
+                    toString(oldClient.getEmailAddress()), 
+                    toString(newClient.getEmailAddress())));
+            }
+            
+            if (!equals(oldClient.getPhoneNumber(), newClient.getPhoneNumber())) {
+                changes.put("phoneNumber", Map.entry(
+                    toString(oldClient.getPhoneNumber()), 
+                    toString(newClient.getPhoneNumber())));
+            }
+            
+            if (!equals(oldClient.getAddress(), newClient.getAddress())) {
+                changes.put("address", Map.entry(
+                    toString(oldClient.getAddress()), 
+                    toString(newClient.getAddress())));
+            }
+            
+            if (!equals(oldClient.getCity(), newClient.getCity())) {
+                changes.put("city", Map.entry(
+                    toString(oldClient.getCity()), 
+                    toString(newClient.getCity())));
+            }
+            
+            if (!equals(oldClient.getState(), newClient.getState())) {
+                changes.put("state", Map.entry(
+                    toString(oldClient.getState()), 
+                    toString(newClient.getState())));
+            }
+            
+            if (!equals(oldClient.getCountry(), newClient.getCountry())) {
+                changes.put("country", Map.entry(
+                    toString(oldClient.getCountry()), 
+                    toString(newClient.getCountry())));
+            }
+            
+            if (!equals(oldClient.getPostalCode(), newClient.getPostalCode())) {
+                changes.put("postalCode", Map.entry(
+                    toString(oldClient.getPostalCode()), 
+                    toString(newClient.getPostalCode())));
+            }
+            
+            if (!equals(oldClient.getNric(), newClient.getNric())) {
+                changes.put("nric", Map.entry(
+                    toString(oldClient.getNric()), 
+                    toString(newClient.getNric())));
+            }
+            
+            if (!equals(oldClient.getAgentId(), newClient.getAgentId())) {
+                changes.put("agentId", Map.entry(
+                    toString(oldClient.getAgentId()), 
+                    toString(newClient.getAgentId())));
+            }
+            
+            if (!equals(oldClient.getVerificationStatus(), newClient.getVerificationStatus())) {
+                changes.put("verificationStatus", Map.entry(
+                    toString(oldClient.getVerificationStatus()), 
+                    toString(newClient.getVerificationStatus())));
+            }
+            
+            if (!equals(oldClient.getDateOfBirth(), newClient.getDateOfBirth())) {
+                changes.put("dateOfBirth", Map.entry(
+                    toString(oldClient.getDateOfBirth()), 
+                    toString(newClient.getDateOfBirth())));
+            }
+            
+            if (!equals(oldClient.getGender(), newClient.getGender())) {
+                changes.put("gender", Map.entry(
+                    toString(oldClient.getGender()), 
+                    toString(newClient.getGender())));
+            }
+            
+            // clientId should never change, so skip it
+            
+            return changes;
+        }
+        
+        // Generic handling for other entity types
         try {
             PropertyDescriptor[] propertyDescriptors = BeanUtils.getPropertyDescriptors(oldEntity.getClass());
             
@@ -81,6 +181,16 @@ public class LoggingUtils {
         }
         
         return changes;
+    }
+    
+    // Helper method to safely compare possibly null values
+    private static boolean equals(Object a, Object b) {
+        return (a == b) || (a != null && a.equals(b));
+    }
+    
+    // Helper method to safely convert objects to string
+    private static String toString(Object obj) {
+        return obj != null ? obj.toString() : "";
     }
 
     /**
@@ -183,12 +293,59 @@ public class LoggingUtils {
 
     /**
      * Gets the current agent ID from security context
-     * @return The agent ID
+     * @return The agent ID or "Admin" if the user is an admin
      */
     public static String getCurrentAgentId() {
-        // In a real application, this would extract the agent ID from the security context
-        // For now, we'll return a placeholder
-        return "system";
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication != null) {
+                // If it's an agent, use their ID from JWT
+                if (JwtAuthorizationUtil.isAgent(authentication)) {
+                    String agentId = JwtAuthorizationUtil.getAgentId(authentication);
+                    return agentId != null ? agentId : "system";
+                }
+                // If it's an admin, use "Admin"
+                else if (JwtAuthorizationUtil.isAdmin(authentication)) {
+                    return "Admin";
+                }
+            }
+            
+            // Default fallback
+            return "system";
+        } catch (Exception e) {
+            // Log the error but don't let it break the app
+            LoggerFactory.getLogger(LoggingUtils.class).error("Error getting agent ID from security context", e);
+            return "system";
+        }
+    }
+    
+    /**
+     * Gets the full name of a client (firstName + lastName)
+     * @param clientId The client ID to get the name for
+     * @return The client's full name or empty string if not found
+     */
+    public static String getClientFullName(String clientId) {
+        if (clientId == null || clientId.isEmpty()) {
+            return "";
+        }
+        
+        // Try to get the client from the service
+        try {
+            // We need to get access to the client service, which requires some refactoring
+            // For now, let's use a placeholder 
+            // In a full implementation, we would inject the ClientService
+            // and use it to look up the client name
+            
+            // This is a placeholder. In real code, you would do:
+            // Client client = clientService.getClient(clientId);
+            // return client.getFirstName() + " " + client.getLastName();
+            
+            return ""; // Will implement actual lookup later
+        } catch (Exception e) {
+            LoggerFactory.getLogger(LoggingUtils.class).error("Error getting client name for ID: {}", clientId, e);
+            return "";
+        }
     }
     
     /**

@@ -91,7 +91,7 @@ public class ClientController {
         // For agents, always filter by their own agentId (ignore any provided agentId)
         if (JwtAuthorizationUtil.isAgent(authentication)) {
             String agentIdFromJwt = JwtAuthorizationUtil.getAgentId(authentication);
-            logger.debug("Agent request: Filtering clients by agent ID from JWT: {}", agentIdFromJwt);
+            // Agent request: filter by their own ID
             
             if (normalizedSearchQuery != null) {
                 clientsPage = clientService.getClientsWithSearchAndAgentId(agentIdFromJwt, normalizedSearchQuery, pageable);
@@ -102,7 +102,7 @@ public class ClientController {
         // For admins, allow filtering by provided agentId or show all
         else if (JwtAuthorizationUtil.isAdmin(authentication)) {
             if (agentId != null && !agentId.isEmpty()) {
-                logger.debug("Admin request: Filtering clients by provided agent ID: {}", agentId);
+                // Admin request: filter by provided agent ID
                 
                 if (normalizedSearchQuery != null) {
                     clientsPage = clientService.getClientsWithSearchAndAgentId(agentId, normalizedSearchQuery, pageable);
@@ -110,7 +110,7 @@ public class ClientController {
                     clientsPage = clientService.getClientsByAgentIdPaginated(agentId, pageable);
                 }
             } else {
-                logger.debug("Admin request: Retrieving all clients");
+                // Admin request: retrieve all clients
                 
                 if (normalizedSearchQuery != null) {
                     clientsPage = clientService.getAllClientsPaginated(pageable, normalizedSearchQuery);
@@ -201,8 +201,10 @@ public class ClientController {
             @PathVariable String clientId,
             @RequestBody ClientDTO clientDTO) {
         
-        // Validate access before update
+        // Fetch but don't modify the existing client for access check only
         Client existingClient = clientService.getClient(clientId);
+        
+        // Validate access before update
         JwtAuthorizationUtil.validateAgentAccess(authentication, existingClient);
         
         // Set agentId if provided
@@ -214,19 +216,23 @@ public class ClientController {
                     throw new UnauthorizedAccessException("Agent cannot assign client to a different agent");
                 }
             }
+            // Using provided agentId
         } else {
             // Keep the existing agentId
             clientDTO.setAgentId(existingClient.getAgentId());
+            // Using existing agentId
         }
         
         // Set the clientId to ensure it's preserved in the update
         clientDTO.setClientId(clientId);
         
-        // Apply partial updates to the existing client
-        var updatedClientModel = clientMapper.applyPartialUpdates(existingClient, clientDTO);
+        // Pass the DTO directly to the service layer
+        // The service will handle the conversion and comparison
         
-        var savedClient = clientService.updateClient(clientId, updatedClientModel);
+        var savedClient = clientService.updateClient(clientId, clientDTO);
+        
         var response = clientMapper.toDto(savedClient);
+        
         return ResponseEntity.ok(response);
     }
 

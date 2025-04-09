@@ -43,7 +43,7 @@ public class KafkaProducer {
     public void produceMessage(Object message) {
         String topic = getTopic(message);
         
-        logger.debug("Producing message to topic {}: {}", topic, message);
+        // Produce message to topic
 
         CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, message);
 
@@ -69,7 +69,7 @@ public class KafkaProducer {
     public void produceMessage(String entityId, Object message, boolean isSuccessful) {
         // Only publish when API calls did not have errors
         if (!isSuccessful) {
-            logger.debug("Skipping Kafka message production for entity {} due to unsuccessful API call", entityId);
+            // Skip message production for unsuccessful API calls
             return;
         }
 
