@@ -45,7 +45,10 @@ public class AccountMapper {
         }
 
         Account model = new Account();
-        model.setAccountId(dto.getAccountId());
+        // Only set accountId if it's provided in the DTO, otherwise let JPA generate it
+        if (dto.getAccountId() != null && !dto.getAccountId().isEmpty()) {
+            model.setAccountId(dto.getAccountId());
+        }
 
         // Note: Client needs to be set separately as we only have clientId in DTO
         if (dto.getClientId() != null) {

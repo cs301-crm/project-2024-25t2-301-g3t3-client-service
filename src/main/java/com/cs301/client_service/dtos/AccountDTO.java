@@ -15,13 +15,11 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AccountDTO {
-    @NotBlank
     private String accountId;
 
     @NotBlank
     private String clientId;
 
-    @NotBlank
     private String clientName;
 
     @NotNull
