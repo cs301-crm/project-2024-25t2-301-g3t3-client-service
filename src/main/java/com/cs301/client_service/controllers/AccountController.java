@@ -91,9 +91,16 @@ public class AccountController {
         // Handle null or empty searchQuery
         String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
         
-        // For agent users, only show accounts for their clients
+        // For agent users
         if (JwtAuthorizationUtil.isAgent(authentication)) {
             String agentIdFromJwt = JwtAuthorizationUtil.getAgentId(authentication);
+            
+            // If agentId request param is provided, validate it matches the JWT agentId
+            if (agentId != null && !agentId.isEmpty() && !agentIdFromJwt.equals(agentId)) {
+                throw new UnauthorizedAccessException("Agent can only access accounts for their own agentId");
+            }
+            
+            // Use the JWT agentId for filtering
             accountsPage = accountService.getAccountsWithSearchAndFilters(agentIdFromJwt, normalizedSearchQuery, type, status, pageable);
         }
         // For admin users who specify an agentId
