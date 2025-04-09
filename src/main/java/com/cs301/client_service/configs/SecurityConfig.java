@@ -41,7 +41,7 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/clients/{clientId}/verify").permitAll() // Allow verify endpoint
             .requestMatchers("/api/v1/clients/**").authenticated()
             .requestMatchers("/api/v1/accounts/**").authenticated()
-            .requestMatchers("/api/v1/logs/**").authenticated()
+            .requestMatchers("/api/v1/client-logs/**").authenticated()
             .requestMatchers("/api/v1/transactions/**").authenticated()
         );
 
