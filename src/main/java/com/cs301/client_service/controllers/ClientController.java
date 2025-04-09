@@ -164,23 +164,14 @@ public class ClientController {
     public ResponseEntity<ClientDTO> updateClient(
             Authentication authentication,
             @PathVariable String clientId,
-            @Valid @RequestBody ClientDTO clientDTO) {
+            @RequestBody ClientDTO clientDTO) {
         
         // Validate access before update
         Client existingClient = clientService.getClient(clientId);
         JwtAuthorizationUtil.validateAgentAccess(authentication, existingClient);
         
-        // Set agentId if not provided
-        if (clientDTO.getAgentId() == null || clientDTO.getAgentId().isEmpty()) {
-            if (JwtAuthorizationUtil.isAdmin(authentication)) {
-                // For admin, use the existing client's agentId
-                clientDTO.setAgentId(existingClient.getAgentId());
-            } else if (JwtAuthorizationUtil.isAgent(authentication)) {
-                // For agent, use their ID from JWT
-                String agentId = JwtAuthorizationUtil.getAgentId(authentication);
-                clientDTO.setAgentId(agentId);
-            }
-        } else {
+        // Set agentId if provided
+        if (clientDTO.getAgentId() != null && !clientDTO.getAgentId().isEmpty()) {
             // If agent tries to change agentId to something other than their own ID, prevent it
             if (JwtAuthorizationUtil.isAgent(authentication)) {
                 String authAgentId = JwtAuthorizationUtil.getAgentId(authentication);
@@ -188,11 +179,19 @@ public class ClientController {
                     throw new UnauthorizedAccessException("Agent cannot assign client to a different agent");
                 }
             }
+        } else {
+            // Keep the existing agentId
+            clientDTO.setAgentId(existingClient.getAgentId());
         }
         
-        var clientModel = clientMapper.toModel(clientDTO);
-        var updatedClient = clientService.updateClient(clientId, clientModel);
-        var response = clientMapper.toDto(updatedClient);
+        // Set the clientId to ensure it's preserved in the update
+        clientDTO.setClientId(clientId);
+        
+        // Apply partial updates to the existing client
+        var updatedClientModel = clientMapper.applyPartialUpdates(existingClient, clientDTO);
+        
+        var savedClient = clientService.updateClient(clientId, updatedClientModel);
+        var response = clientMapper.toDto(savedClient);
         return ResponseEntity.ok(response);
     }
 

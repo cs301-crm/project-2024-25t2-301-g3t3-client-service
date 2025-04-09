@@ -55,7 +55,6 @@ public class ClientMapper {
         }
 
         Client model = new Client();
-        model.setClientId(dto.getClientId());
         model.setFirstName(dto.getFirstName());
         model.setLastName(dto.getLastName());
         model.setDateOfBirth(LocalDate.parse(dto.getDateOfBirth(), DATE_FORMATTER));
@@ -106,5 +105,79 @@ public class ClientMapper {
         return models.stream()
                 .map(this::toListDto)
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Applies partial updates from the DTO to the existing client model
+     * Only updates fields that are not null in the DTO
+     */
+    public Client applyPartialUpdates(Client existingClient, ClientDTO dto) {
+        if (dto == null) {
+            return existingClient;
+        }
+        
+        // Always preserve the clientId
+        if (dto.getClientId() != null) {
+            existingClient.setClientId(dto.getClientId());
+        }
+        
+        // Apply only non-null field updates
+        if (dto.getFirstName() != null) {
+            existingClient.setFirstName(dto.getFirstName());
+        }
+        
+        if (dto.getLastName() != null) {
+            existingClient.setLastName(dto.getLastName());
+        }
+        
+        if (dto.getDateOfBirth() != null) {
+            existingClient.setDateOfBirth(LocalDate.parse(dto.getDateOfBirth(), DATE_FORMATTER));
+        }
+        
+        if (dto.getGender() != null) {
+            existingClient.setGender(dto.getGender());
+        }
+        
+        if (dto.getEmailAddress() != null) {
+            existingClient.setEmailAddress(dto.getEmailAddress());
+        }
+        
+        if (dto.getPhoneNumber() != null) {
+            existingClient.setPhoneNumber(dto.getPhoneNumber());
+        }
+        
+        if (dto.getAddress() != null) {
+            existingClient.setAddress(dto.getAddress());
+        }
+        
+        if (dto.getCity() != null) {
+            existingClient.setCity(dto.getCity());
+        }
+        
+        if (dto.getState() != null) {
+            existingClient.setState(dto.getState());
+        }
+        
+        if (dto.getCountry() != null) {
+            existingClient.setCountry(dto.getCountry());
+        }
+        
+        if (dto.getPostalCode() != null) {
+            existingClient.setPostalCode(dto.getPostalCode());
+        }
+        
+        if (dto.getNric() != null) {
+            existingClient.setNric(dto.getNric());
+        }
+        
+        if (dto.getAgentId() != null) {
+            existingClient.setAgentId(dto.getAgentId());
+        }
+        
+        if (dto.getVerificationStatus() != null) {
+            existingClient.setVerificationStatus(dto.getVerificationStatus());
+        }
+        
+        return existingClient;
     }
 }
