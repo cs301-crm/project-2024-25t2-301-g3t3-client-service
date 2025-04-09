@@ -95,8 +95,11 @@ public class LogController {
         }
         // Admin can access any client's logs, no verification needed
         
+        // Handle null or empty searchQuery
+        String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
+        
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
-        Page<Log> logsPage = logService.getLogsByClientId(clientId, searchQuery, pageable);
+        Page<Log> logsPage = logService.getLogsByClientId(clientId, normalizedSearchQuery, pageable);
         
         List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
         
@@ -160,8 +163,11 @@ public class LogController {
         }
         // Admin can access any agent's logs, no verification needed
         
+        // Handle null or empty searchQuery
+        String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
+        
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
-        Page<Log> logsPage = logService.getLogsByAgentId(agentId, searchQuery, pageable);
+        Page<Log> logsPage = logService.getLogsByAgentId(agentId, normalizedSearchQuery, pageable);
         
         List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
         

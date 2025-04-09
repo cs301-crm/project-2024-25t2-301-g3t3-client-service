@@ -31,7 +31,7 @@ public interface AccountRepository extends JpaRepository<Account, String> {
            "(:agentId IS NULL OR a.client.agentId = :agentId) AND " +
            "(:type IS NULL OR a.accountType = :type) AND " +
            "(:status IS NULL OR a.accountStatus = :status) AND " +
-           "(:search IS NULL OR " +
+           "(:search IS NULL OR :search = '' OR " +
            "CAST(a.accountId as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(a.currency as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(a.branchId as text) LIKE CONCAT('%', :search, '%') OR " +

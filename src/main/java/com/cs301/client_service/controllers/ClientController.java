@@ -85,20 +85,38 @@ public class ClientController {
         Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Client> clientsPage;
         
+        // Handle null or empty searchQuery
+        String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
+        
         // For agents, always filter by their own agentId (ignore any provided agentId)
         if (JwtAuthorizationUtil.isAgent(authentication)) {
             String agentIdFromJwt = JwtAuthorizationUtil.getAgentId(authentication);
             logger.debug("Agent request: Filtering clients by agent ID from JWT: {}", agentIdFromJwt);
-            clientsPage = clientService.getClientsWithSearchAndAgentId(agentIdFromJwt, searchQuery, pageable);
+            
+            if (normalizedSearchQuery != null) {
+                clientsPage = clientService.getClientsWithSearchAndAgentId(agentIdFromJwt, normalizedSearchQuery, pageable);
+            } else {
+                clientsPage = clientService.getClientsByAgentIdPaginated(agentIdFromJwt, pageable);
+            }
         }
         // For admins, allow filtering by provided agentId or show all
         else if (JwtAuthorizationUtil.isAdmin(authentication)) {
             if (agentId != null && !agentId.isEmpty()) {
                 logger.debug("Admin request: Filtering clients by provided agent ID: {}", agentId);
-                clientsPage = clientService.getClientsWithSearchAndAgentId(agentId, searchQuery, pageable);
+                
+                if (normalizedSearchQuery != null) {
+                    clientsPage = clientService.getClientsWithSearchAndAgentId(agentId, normalizedSearchQuery, pageable);
+                } else {
+                    clientsPage = clientService.getClientsByAgentIdPaginated(agentId, pageable);
+                }
             } else {
                 logger.debug("Admin request: Retrieving all clients");
-                clientsPage = clientService.getAllClientsPaginated(pageable, searchQuery);
+                
+                if (normalizedSearchQuery != null) {
+                    clientsPage = clientService.getAllClientsPaginated(pageable, normalizedSearchQuery);
+                } else {
+                    clientsPage = clientService.getAllClientsPaginated(pageable, null);
+                }
             }
         } 
         // In case of invalid jwt
@@ -142,7 +160,8 @@ public class ClientController {
             Authentication authentication,
             @PathVariable String agentId,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int limit) {
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String searchQuery) {
         
         // For agents, only allow accessing their own clients
         if (JwtAuthorizationUtil.isAgent(authentication)) {
@@ -154,7 +173,16 @@ public class ClientController {
         // Admin can access any agent's clients, no check needed
         
         Pageable pageable = PageRequest.of(page - 1, limit);
-        Page<Client> clientsPage = clientService.getClientsByAgentIdPaginated(agentId, pageable);
+        Page<Client> clientsPage;
+        
+        // Handle null or empty searchQuery
+        String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
+        
+        if (normalizedSearchQuery != null) {
+            clientsPage = clientService.getClientsWithSearchAndAgentId(agentId, normalizedSearchQuery, pageable);
+        } else {
+            clientsPage = clientService.getClientsByAgentIdPaginated(agentId, pageable);
+        }
         
         List<ClientListDTO> clientDTOs = clientMapper.toListDtoList(clientsPage.getContent());
         

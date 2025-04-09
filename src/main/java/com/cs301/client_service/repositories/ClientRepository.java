@@ -15,7 +15,7 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     Page<Client> findByAgentId(String agentId, Pageable pageable);
     
     @Query(value = "SELECT c FROM Client c WHERE " +
-           "(:search IS NULL OR " +
+           "(:search IS NULL OR :search = '' OR " +
            "CAST(c.clientId as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(c.firstName as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(c.lastName as text) LIKE CONCAT('%', :search, '%') OR " +
@@ -32,7 +32,7 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     
     @Query(value = "SELECT c FROM Client c WHERE " +
            "(:agentId IS NULL OR c.agentId = :agentId) AND " +
-           "(:search IS NULL OR " +
+           "(:search IS NULL OR :search = '' OR " +
            "CAST(c.clientId as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(c.firstName as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(c.lastName as text) LIKE CONCAT('%', :search, '%') OR " +

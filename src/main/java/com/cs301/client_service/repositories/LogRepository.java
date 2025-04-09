@@ -37,7 +37,7 @@ public interface LogRepository extends JpaRepository<Log, String> {
     Page<Log> findByDateTimeBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
     
     @Query(value = "SELECT l FROM Log l WHERE l.clientId = :clientId AND " +
-           "(:search IS NULL OR " +
+           "(:search IS NULL OR :search = '' OR " +
            "CAST(l.id as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(l.attributeName as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(l.beforeValue as text) LIKE CONCAT('%', :search, '%') OR " +
@@ -51,7 +51,7 @@ public interface LogRepository extends JpaRepository<Log, String> {
             Pageable pageable);
     
     @Query(value = "SELECT l FROM Log l WHERE l.agentId = :agentId AND " +
-           "(:search IS NULL OR " +
+           "(:search IS NULL OR :search = '' OR " +
            "CAST(l.id as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(l.attributeName as text) LIKE CONCAT('%', :search, '%') OR " +
            "CAST(l.beforeValue as text) LIKE CONCAT('%', :search, '%') OR " +

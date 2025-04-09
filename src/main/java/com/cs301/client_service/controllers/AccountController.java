@@ -89,14 +89,17 @@ public class AccountController {
         Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Account> accountsPage;
         
+        // Handle null or empty searchQuery
+        String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
+        
         // For agent users, only show accounts for their clients
         if (JwtAuthorizationUtil.isAgent(authentication)) {
             String agentIdFromJwt = JwtAuthorizationUtil.getAgentId(authentication);
-            accountsPage = accountService.getAccountsWithSearchAndFilters(agentIdFromJwt, searchQuery, type, status, pageable);
+            accountsPage = accountService.getAccountsWithSearchAndFilters(agentIdFromJwt, normalizedSearchQuery, type, status, pageable);
         }
         // For admin users who specify an agentId
         else if (JwtAuthorizationUtil.isAdmin(authentication) && agentId != null && !agentId.isEmpty()) {
-            accountsPage = accountService.getAccountsWithSearchAndFilters(agentId, searchQuery, type, status, pageable);
+            accountsPage = accountService.getAccountsWithSearchAndFilters(agentId, normalizedSearchQuery, type, status, pageable);
         }
         // For admin users with no agentId filter
         else {
