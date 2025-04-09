@@ -25,7 +25,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
         http.authorizeHttpRequests(
-            auth -> auth.anyRequest().authenticated()
+            auth -> auth
+                .requestMatchers("/api/v1/clients/{clientId}/verify").permitAll() // Allow verify endpoint
+                .requestMatchers("/api/v1/clients/**").authenticated()
+                .requestMatchers("/api/v1/accounts/**").authenticated()
+                .requestMatchers("/api/v1/logs/**").authenticated()
+                .requestMatchers("/api/v1/transactions/**").authenticated()
         );
 
         http.sessionManagement(session ->
