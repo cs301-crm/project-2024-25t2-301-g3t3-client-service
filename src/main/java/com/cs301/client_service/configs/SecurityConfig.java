@@ -20,7 +20,7 @@ public class SecurityConfig {
     
     @Value("${cors.origin}")
     private List<String> corsOrigins;
-
+    
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
