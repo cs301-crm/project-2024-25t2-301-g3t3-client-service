@@ -30,6 +30,8 @@ public interface LogRepository extends JpaRepository<Log, String> {
     
     Page<Log> findByClientIdAndCrudType(String clientId, Log.CrudType crudType, Pageable pageable);
     
+    Page<Log> findByAgentIdAndCrudType(String agentId, Log.CrudType crudType, Pageable pageable);
+    
     List<Log> findByDateTimeBetween(LocalDateTime start, LocalDateTime end);
     
     Page<Log> findByDateTimeBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
