@@ -27,21 +27,21 @@ public interface AccountRepository extends JpaRepository<Account, String> {
             @Param("status") AccountStatus status,
             Pageable pageable);
     
-    @Query("SELECT a FROM Account a WHERE " +
+    @Query(value = "SELECT a FROM Account a WHERE " +
            "(:agentId IS NULL OR a.client.agentId = :agentId) AND " +
            "(:type IS NULL OR a.accountType = :type) AND " +
            "(:status IS NULL OR a.accountStatus = :status) AND " +
            "(:search IS NULL OR " +
-           "LOWER(CAST(a.accountId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(a.currency) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(a.branchId) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(a.client.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(a.client.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(a.client.emailAddress) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(a.client.phoneNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(a.client.nric) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(CAST(a.client.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(CAST(a.client.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "CAST(a.accountId as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.currency as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.branchId as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.client.firstName as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.client.lastName as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.client.emailAddress as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.client.phoneNumber as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.client.nric as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.client.clientId as text) LIKE CONCAT('%', :search, '%') OR " +
+           "CAST(a.client.agentId as text) LIKE CONCAT('%', :search, '%'))")
     Page<Account> findWithSearchAndFilters(
             @Param("agentId") String agentId,
             @Param("type") AccountType type,
