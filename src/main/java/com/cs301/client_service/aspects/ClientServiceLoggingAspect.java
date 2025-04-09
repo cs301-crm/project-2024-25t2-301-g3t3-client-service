@@ -131,20 +131,41 @@ public class ClientServiceLoggingAspect extends DatabaseLoggingAspect {
             // Extract method arguments
             Object[] args = getArgs(joinPoint);
             String clientId = (String) args[0];
-            
-            // Get the client BEFORE the update
-            Client oldClient = clientRepository.findById(clientId).orElse(null);
-            
-            if (oldClient == null) {
-                logger.warn("Client not found for update with ID: {}", clientId);
-                return joinPoint.proceed(); // Just proceed with the method execution
-            }
+            Client newClientData = (Client) args[1];
             
             // Log the update attempt
             logger.info("Attempting to log update for client with ID: {}", clientId);
             
-            // Debug logging for old client
-            logger.debug("Old client before update: {}", oldClient);
+            // Get the client BEFORE the update and create a deep copy to preserve the original state
+            Client existingClient = clientRepository.findById(clientId).orElse(null);
+            
+            if (existingClient == null) {
+                logger.warn("Client not found for update with ID: {}", clientId);
+                return joinPoint.proceed(); // Just proceed with the method execution
+            }
+            
+            // Create a deep copy of the existing client to compare with after the update
+            Client originalClientSnapshot = Client.builder()
+                .clientId(existingClient.getClientId())
+                .firstName(existingClient.getFirstName())
+                .lastName(existingClient.getLastName())
+                .dateOfBirth(existingClient.getDateOfBirth())
+                .gender(existingClient.getGender())
+                .emailAddress(existingClient.getEmailAddress())
+                .phoneNumber(existingClient.getPhoneNumber())
+                .address(existingClient.getAddress())
+                .city(existingClient.getCity())
+                .state(existingClient.getState())
+                .country(existingClient.getCountry())
+                .postalCode(existingClient.getPostalCode())
+                .nric(existingClient.getNric())
+                .agentId(existingClient.getAgentId())
+                .verificationStatus(existingClient.getVerificationStatus())
+                .build();
+            
+            // Debug logging for the original client
+            logger.debug("Original client before update: {}", originalClientSnapshot);
+            logger.debug("New client data for update: {}", newClientData);
             
             // Proceed with the method execution (this performs the actual update)
             Object result = joinPoint.proceed();
@@ -155,19 +176,35 @@ public class ClientServiceLoggingAspect extends DatabaseLoggingAspect {
             // Debug logging for updated client
             logger.debug("Updated client after update: {}", updatedClient);
             
-            // Compare old and new clients to determine what changed
-            Map<String, Map.Entry<String, String>> changes = compareEntities(oldClient, updatedClient);
+            // Compare original and updated clients to determine what changed
+            Map<String, Map.Entry<String, String>> changes = compareEntities(originalClientSnapshot, updatedClient);
             
             // Debug logging for changes
-            logger.debug("Changes detected: {}", changes);
+            logger.debug("Changes detected for client {}: {}", clientId, changes);
             
-            // Only create a log if there were changes
-            if (!changes.isEmpty()) {
-                // Create consolidated strings for attribute names, before values, and after values
-                StringBuilder attributeNames = new StringBuilder();
-                StringBuilder beforeValues = new StringBuilder();
-                StringBuilder afterValues = new StringBuilder();
+            // Create consolidated strings for attribute names, before values, and after values
+            StringBuilder attributeNames = new StringBuilder();
+            StringBuilder beforeValues = new StringBuilder();
+            StringBuilder afterValues = new StringBuilder();
+            
+            // If no changes detected, log a warning but don't create a log entry
+            if (changes.isEmpty()) {
+                logger.warn("No changes detected for client update with ID: {}, comparison may have failed", clientId);
                 
+                // For debugging - explicitly check a few key fields
+                if (!originalClientSnapshot.getFirstName().equals(updatedClient.getFirstName())) {
+                    logger.info("First name changed but not detected: {} -> {}", 
+                        originalClientSnapshot.getFirstName(), updatedClient.getFirstName());
+                }
+                if (!originalClientSnapshot.getLastName().equals(updatedClient.getLastName())) {
+                    logger.info("Last name changed but not detected: {} -> {}", 
+                        originalClientSnapshot.getLastName(), updatedClient.getLastName());
+                }
+                if (!originalClientSnapshot.getEmailAddress().equals(updatedClient.getEmailAddress())) {
+                    logger.info("Email changed but not detected: {} -> {}", 
+                        originalClientSnapshot.getEmailAddress(), updatedClient.getEmailAddress());
+                }
+            } else {
                 boolean first = true;
                 for (Map.Entry<String, Map.Entry<String, String>> change : changes.entrySet()) {
                     if (!first) {
@@ -187,7 +224,7 @@ public class ClientServiceLoggingAspect extends DatabaseLoggingAspect {
                     first = false;
                 }
                 
-                // Create and save the log entry
+                // Create and save the log entry - only do this when actual changes are detected
                 Log log = createLogEntry(
                     clientId,
                     updatedClient,
@@ -197,15 +234,17 @@ public class ClientServiceLoggingAspect extends DatabaseLoggingAspect {
                     afterValues.toString()
                 );
                 
-                logRepository.save(log);
-                logger.debug("Logged update for client with ID: {}", clientId);
-            } else {
-                logger.warn("No changes detected for client update with ID: {}", clientId);
+                try {
+                    Log savedLog = logRepository.save(log);
+                    logger.info("Successfully logged update for client with ID: {}, log ID: {}", clientId, savedLog.getId());
+                } catch (Exception e) {
+                    logger.error("Failed to save log for client update: {}", e.getMessage(), e);
+                }
             }
             
             return result;
         } catch (Exception e) {
-            logger.error("Error logging client update", e);
+            logger.error("Error logging client update: {}", e.getMessage(), e);
             return joinPoint.proceed(); // Still proceed with the method execution even if logging fails
         }
     }

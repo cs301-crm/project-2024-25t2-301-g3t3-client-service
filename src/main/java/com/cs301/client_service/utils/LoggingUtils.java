@@ -6,6 +6,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
@@ -183,12 +187,59 @@ public class LoggingUtils {
 
     /**
      * Gets the current agent ID from security context
-     * @return The agent ID
+     * @return The agent ID or "Admin" if the user is an admin
      */
     public static String getCurrentAgentId() {
-        // In a real application, this would extract the agent ID from the security context
-        // For now, we'll return a placeholder
-        return "system";
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication != null) {
+                // If it's an agent, use their ID from JWT
+                if (JwtAuthorizationUtil.isAgent(authentication)) {
+                    String agentId = JwtAuthorizationUtil.getAgentId(authentication);
+                    return agentId != null ? agentId : "system";
+                }
+                // If it's an admin, use "Admin"
+                else if (JwtAuthorizationUtil.isAdmin(authentication)) {
+                    return "Admin";
+                }
+            }
+            
+            // Default fallback
+            return "system";
+        } catch (Exception e) {
+            // Log the error but don't let it break the app
+            LoggerFactory.getLogger(LoggingUtils.class).error("Error getting agent ID from security context", e);
+            return "system";
+        }
+    }
+    
+    /**
+     * Gets the full name of a client (firstName + lastName)
+     * @param clientId The client ID to get the name for
+     * @return The client's full name or empty string if not found
+     */
+    public static String getClientFullName(String clientId) {
+        if (clientId == null || clientId.isEmpty()) {
+            return "";
+        }
+        
+        // Try to get the client from the service
+        try {
+            // We need to get access to the client service, which requires some refactoring
+            // For now, let's use a placeholder 
+            // In a full implementation, we would inject the ClientService
+            // and use it to look up the client name
+            
+            // This is a placeholder. In real code, you would do:
+            // Client client = clientService.getClient(clientId);
+            // return client.getFirstName() + " " + client.getLastName();
+            
+            return ""; // Will implement actual lookup later
+        } catch (Exception e) {
+            LoggerFactory.getLogger(LoggingUtils.class).error("Error getting client name for ID: {}", clientId, e);
+            return "";
+        }
     }
     
     /**

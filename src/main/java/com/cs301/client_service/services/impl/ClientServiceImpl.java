@@ -92,7 +92,23 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public Client updateClient(String clientId, Client client) {
+        logger.debug("SERVICE: Update client request received for clientId: {}", clientId);
+        logger.debug("SERVICE: Client to update: {}", client);
+        
         Client existingClient = validateClientOperation(clientId, OPERATION_UPDATE);
+        logger.debug("SERVICE: Existing client from DB: {}", existingClient);
+        
+        // Log specific fields for easy comparison
+        logger.debug("SERVICE: BEFORE UPDATE - FirstName: {}, LastName: {}, Email: {}, Phone: {}, Address: {}", 
+            existingClient.getFirstName(), existingClient.getLastName(), 
+            existingClient.getEmailAddress(), existingClient.getPhoneNumber(),
+            existingClient.getAddress());
+        
+        logger.debug("SERVICE: UPDATE WITH - FirstName: {}, LastName: {}, Email: {}, Phone: {}, Address: {}", 
+            client.getFirstName(), client.getLastName(), 
+            client.getEmailAddress(), client.getPhoneNumber(),
+            client.getAddress());
+            
         String clientEmail = client.getEmailAddress();
         
         try {
@@ -103,7 +119,34 @@ public class ClientServiceImpl implements ClientService {
             );
             
             client.setClientId(clientId);
-            return clientRepository.save(client);
+            logger.debug("SERVICE: About to save updated client to DB: {}", client);
+            
+            Client savedClient = clientRepository.save(client);
+            logger.debug("SERVICE: Client after save operation: {}", savedClient);
+            
+            // Log changes for key fields
+            if (!existingClient.getFirstName().equals(savedClient.getFirstName())) {
+                logger.info("SERVICE: First name changed: {} -> {}", 
+                    existingClient.getFirstName(), savedClient.getFirstName());
+            }
+            if (!existingClient.getLastName().equals(savedClient.getLastName())) {
+                logger.info("SERVICE: Last name changed: {} -> {}", 
+                    existingClient.getLastName(), savedClient.getLastName());
+            }
+            if (!existingClient.getEmailAddress().equals(savedClient.getEmailAddress())) {
+                logger.info("SERVICE: Email changed: {} -> {}", 
+                    existingClient.getEmailAddress(), savedClient.getEmailAddress());
+            }
+            if (!existingClient.getPhoneNumber().equals(savedClient.getPhoneNumber())) {
+                logger.info("SERVICE: Phone changed: {} -> {}", 
+                    existingClient.getPhoneNumber(), savedClient.getPhoneNumber());
+            }
+            if (!existingClient.getAddress().equals(savedClient.getAddress())) {
+                logger.info("SERVICE: Address changed: {} -> {}", 
+                    existingClient.getAddress(), savedClient.getAddress());
+            }
+            
+            return savedClient;
         } finally {
             ClientContextHolder.clear();
         }

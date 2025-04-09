@@ -201,8 +201,13 @@ public class ClientController {
             @PathVariable String clientId,
             @RequestBody ClientDTO clientDTO) {
         
+        logger.debug("CONTROLLER: Update client request received for clientId: {}", clientId);
+        logger.debug("CONTROLLER: Request DTO: {}", clientDTO);
+        
         // Validate access before update
         Client existingClient = clientService.getClient(clientId);
+        logger.debug("CONTROLLER: Existing client fetched from DB: {}", existingClient);
+        
         JwtAuthorizationUtil.validateAgentAccess(authentication, existingClient);
         
         // Set agentId if provided
@@ -214,9 +219,11 @@ public class ClientController {
                     throw new UnauthorizedAccessException("Agent cannot assign client to a different agent");
                 }
             }
+            logger.debug("CONTROLLER: Using provided agentId: {}", clientDTO.getAgentId());
         } else {
             // Keep the existing agentId
             clientDTO.setAgentId(existingClient.getAgentId());
+            logger.debug("CONTROLLER: Using existing agentId: {}", clientDTO.getAgentId());
         }
         
         // Set the clientId to ensure it's preserved in the update
@@ -224,9 +231,14 @@ public class ClientController {
         
         // Apply partial updates to the existing client
         var updatedClientModel = clientMapper.applyPartialUpdates(existingClient, clientDTO);
+        logger.debug("CONTROLLER: Client model after applying partial updates: {}", updatedClientModel);
         
         var savedClient = clientService.updateClient(clientId, updatedClientModel);
+        logger.debug("CONTROLLER: Client returned after service update: {}", savedClient);
+        
         var response = clientMapper.toDto(savedClient);
+        logger.debug("CONTROLLER: Final response DTO: {}", response);
+        
         return ResponseEntity.ok(response);
     }
 
