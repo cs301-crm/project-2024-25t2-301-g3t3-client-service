@@ -24,19 +24,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
-        http.authorizeHttpRequests(
-            auth -> auth
-                .requestMatchers("/api/v1/clients/{clientId}/verify").permitAll() // Allow verify endpoint
-                .requestMatchers("/api/v1/clients/**").authenticated()
-                .requestMatchers("/api/v1/accounts/**").authenticated()
-                .requestMatchers("/api/v1/logs/**").authenticated()
-                .requestMatchers("/api/v1/transactions/**").authenticated()
+        http.authorizeHttpRequests(auth -> auth
+            .requestMatchers(
+                "/v2/api-docs",
+                "/swagger-resources/configuration/ui",
+                "/swagger-resources",
+                "/swagger-resources/configuration/security",
+                "/swagger-ui.html",
+                "/webjars/**",
+                "/swagger-ui/**",
+                "/v3/api-docs/**",
+                "/configuration/**",
+                "/swagger*/**",
+                "/actuator/**"
+            ).permitAll()
+            .requestMatchers("/api/v1/clients/{clientId}/verify").permitAll() // Allow verify endpoint
+            .requestMatchers("/api/v1/clients/**").authenticated()
+            .requestMatchers("/api/v1/accounts/**").authenticated()
+            .requestMatchers("/api/v1/logs/**").authenticated()
+            .requestMatchers("/api/v1/transactions/**").authenticated()
         );
 
         http.sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
-
+        
         http.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
         http.csrf(AbstractHttpConfigurer::disable);
         http.cors(Customizer.withDefaults());
