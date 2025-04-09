@@ -3,7 +3,6 @@ package com.cs301.client_service.controllers;
 import com.cs301.client_service.constants.AccountStatus;
 import com.cs301.client_service.constants.AccountType;
 import com.cs301.client_service.dtos.AccountDTO;
-import com.cs301.client_service.exceptions.AccountNotFoundException;
 import com.cs301.client_service.exceptions.UnauthorizedAccessException;
 import com.cs301.client_service.mappers.AccountMapper;
 import com.cs301.client_service.models.Account;

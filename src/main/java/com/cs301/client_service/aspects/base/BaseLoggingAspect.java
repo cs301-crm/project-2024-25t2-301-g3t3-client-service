@@ -1,10 +1,13 @@
 package com.cs301.client_service.aspects.base;
 
+import com.cs301.client_service.models.Client;
 import com.cs301.client_service.models.Log;
+import com.cs301.client_service.services.ClientService;
 import com.cs301.client_service.utils.LoggingUtils;
 import org.aspectj.lang.JoinPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
@@ -16,6 +19,10 @@ import java.time.LocalDateTime;
 public abstract class BaseLoggingAspect {
     
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+    
+    // Inject ClientService to fetch client information
+    @Autowired
+    protected ClientService clientService;
     
     /**
      * Create a log entry for a CRUD operation
@@ -31,12 +38,26 @@ public abstract class BaseLoggingAspect {
      */
     protected Log createLogEntry(String clientId, Object entity, Log.CrudType crudType, 
                                String attributeName, String beforeValue, String afterValue) {
+        
+        // Get the client's full name if clientId is provided
+        String clientNameInfo = "";
+        if (clientId != null && !clientId.isEmpty()) {
+            try {
+                Client client = clientService.getClient(clientId);
+                if (client != null) {
+                    clientNameInfo = client.getFirstName() + " " + client.getLastName();
+                }
+            } catch (Exception e) {
+                logger.error("Error fetching client information for logging", e);
+            }
+        }
+        
         // For CREATE, READ, DELETE operations, store clientId in attributeName if not provided
         if ((crudType == Log.CrudType.CREATE || crudType == Log.CrudType.READ || crudType == Log.CrudType.DELETE) 
                 && (attributeName == null || attributeName.isEmpty())) {
                     return Log.builder()
                         .crudType(crudType)
-                        .attributeName(attributeName)
+                        .attributeName(clientNameInfo.isEmpty() ? attributeName : clientNameInfo)
                         .beforeValue("")
                         .afterValue("")
                         .agentId(LoggingUtils.getCurrentAgentId())
@@ -47,7 +68,7 @@ public abstract class BaseLoggingAspect {
         
         return Log.builder()
                 .crudType(crudType)
-                .attributeName(attributeName)
+                .attributeName(clientNameInfo.isEmpty() ? attributeName : attributeName + " (" + clientNameInfo + ")")
                 .beforeValue(beforeValue)
                 .afterValue(afterValue)
                 .agentId(LoggingUtils.getCurrentAgentId())
