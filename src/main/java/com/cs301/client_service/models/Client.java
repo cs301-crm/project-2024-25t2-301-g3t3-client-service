@@ -82,7 +82,6 @@ public class Client {
     @NotBlank
     private String agentId;
     
-    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

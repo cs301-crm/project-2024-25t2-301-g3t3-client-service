@@ -62,9 +62,7 @@ public class ClientDTO {
     @Size(min = 9, max = 9)
     private String nric;
     
-    @NotBlank
     private String agentId;
     
-    @NotBlank
     private VerificationStatus verificationStatus;
 }

@@ -51,6 +51,17 @@ public class ClientController {
             Authentication authentication,
             @Valid @RequestBody ClientDTO clientDTO) {
         
+        // Set agentId if not provided
+        if (clientDTO.getAgentId() == null || clientDTO.getAgentId().isEmpty()) {
+            // If ADMIN, agentId is required; if AGENT, use their ID from JWT
+            if (JwtAuthorizationUtil.isAdmin(authentication)) {
+                throw new IllegalArgumentException("Admin must provide agentId when creating a client");
+            } else if (JwtAuthorizationUtil.isAgent(authentication)) {
+                String agentId = JwtAuthorizationUtil.getAgentId(authentication);
+                clientDTO.setAgentId(agentId);
+            }
+        }
+        
         var clientModel = clientMapper.toModel(clientDTO);
         var savedClient = clientService.createClient(clientModel);
         var response = clientMapper.toDto(savedClient);
@@ -158,6 +169,26 @@ public class ClientController {
         // Validate access before update
         Client existingClient = clientService.getClient(clientId);
         JwtAuthorizationUtil.validateAgentAccess(authentication, existingClient);
+        
+        // Set agentId if not provided
+        if (clientDTO.getAgentId() == null || clientDTO.getAgentId().isEmpty()) {
+            if (JwtAuthorizationUtil.isAdmin(authentication)) {
+                // For admin, use the existing client's agentId
+                clientDTO.setAgentId(existingClient.getAgentId());
+            } else if (JwtAuthorizationUtil.isAgent(authentication)) {
+                // For agent, use their ID from JWT
+                String agentId = JwtAuthorizationUtil.getAgentId(authentication);
+                clientDTO.setAgentId(agentId);
+            }
+        } else {
+            // If agent tries to change agentId to something other than their own ID, prevent it
+            if (JwtAuthorizationUtil.isAgent(authentication)) {
+                String authAgentId = JwtAuthorizationUtil.getAgentId(authentication);
+                if (!authAgentId.equals(clientDTO.getAgentId())) {
+                    throw new UnauthorizedAccessException("Agent cannot assign client to a different agent");
+                }
+            }
+        }
         
         var clientModel = clientMapper.toModel(clientDTO);
         var updatedClient = clientService.updateClient(clientId, clientModel);
