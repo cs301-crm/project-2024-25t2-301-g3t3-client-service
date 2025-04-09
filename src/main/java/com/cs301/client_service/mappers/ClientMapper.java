@@ -116,10 +116,6 @@ public class ClientMapper {
             return existingClient;
         }
         
-        logger.debug("MAPPER: Applying partial updates from DTO to Client");
-        logger.debug("MAPPER: Existing client: {}", existingClient);
-        logger.debug("MAPPER: DTO with updates: {}", dto);
-        
         // Always preserve the clientId
         if (dto.getClientId() != null) {
             existingClient.setClientId(dto.getClientId());
@@ -127,76 +123,61 @@ public class ClientMapper {
         
         // Apply only non-null field updates
         if (dto.getFirstName() != null) {
-            logger.debug("MAPPER: Updating firstName: {} -> {}", existingClient.getFirstName(), dto.getFirstName());
             existingClient.setFirstName(dto.getFirstName());
         }
         
         if (dto.getLastName() != null) {
-            logger.debug("MAPPER: Updating lastName: {} -> {}", existingClient.getLastName(), dto.getLastName());
             existingClient.setLastName(dto.getLastName());
         }
         
         if (dto.getDateOfBirth() != null) {
-            logger.debug("MAPPER: Updating dateOfBirth: {} -> {}", existingClient.getDateOfBirth(), dto.getDateOfBirth());
             existingClient.setDateOfBirth(LocalDate.parse(dto.getDateOfBirth(), DATE_FORMATTER));
         }
         
         if (dto.getGender() != null) {
-            logger.debug("MAPPER: Updating gender: {} -> {}", existingClient.getGender(), dto.getGender());
             existingClient.setGender(dto.getGender());
         }
         
         if (dto.getEmailAddress() != null) {
-            logger.debug("MAPPER: Updating emailAddress: {} -> {}", existingClient.getEmailAddress(), dto.getEmailAddress());
             existingClient.setEmailAddress(dto.getEmailAddress());
         }
         
         if (dto.getPhoneNumber() != null) {
-            logger.debug("MAPPER: Updating phoneNumber: {} -> {}", existingClient.getPhoneNumber(), dto.getPhoneNumber());
             existingClient.setPhoneNumber(dto.getPhoneNumber());
         }
         
         if (dto.getAddress() != null) {
-            logger.debug("MAPPER: Updating address: {} -> {}", existingClient.getAddress(), dto.getAddress());
             existingClient.setAddress(dto.getAddress());
         }
         
         if (dto.getCity() != null) {
-            logger.debug("MAPPER: Updating city: {} -> {}", existingClient.getCity(), dto.getCity());
             existingClient.setCity(dto.getCity());
         }
         
         if (dto.getState() != null) {
-            logger.debug("MAPPER: Updating state: {} -> {}", existingClient.getState(), dto.getState());
             existingClient.setState(dto.getState());
         }
         
         if (dto.getCountry() != null) {
-            logger.debug("MAPPER: Updating country: {} -> {}", existingClient.getCountry(), dto.getCountry());
             existingClient.setCountry(dto.getCountry());
         }
         
         if (dto.getPostalCode() != null) {
-            logger.debug("MAPPER: Updating postalCode: {} -> {}", existingClient.getPostalCode(), dto.getPostalCode());
             existingClient.setPostalCode(dto.getPostalCode());
         }
         
         if (dto.getNric() != null) {
-            logger.debug("MAPPER: Updating nric: {} -> {}", existingClient.getNric(), dto.getNric());
             existingClient.setNric(dto.getNric());
         }
         
         if (dto.getAgentId() != null) {
-            logger.debug("MAPPER: Updating agentId: {} -> {}", existingClient.getAgentId(), dto.getAgentId());
             existingClient.setAgentId(dto.getAgentId());
         }
         
         if (dto.getVerificationStatus() != null) {
-            logger.debug("MAPPER: Updating verificationStatus: {} -> {}", existingClient.getVerificationStatus(), dto.getVerificationStatus());
             existingClient.setVerificationStatus(dto.getVerificationStatus());
         }
         
-        logger.debug("MAPPER: Client after updates: {}", existingClient);
         return existingClient;
     }
 }
