@@ -89,8 +89,7 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
             );
             
             logRepository.save(log);
-            logger.debug("Logged successful creation for {} with ID: {} for client: {}", 
-                        getEntityType(), entityId, clientId);
+            // Logged successful creation
         } catch (Exception e) {
             logger.error("Error logging {} creation", getEntityType().toLowerCase(), e);
         }
@@ -123,8 +122,7 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
             );
             
             logRepository.save(log);
-            logger.debug("Logged successful read for {} with ID: {} for client: {}", 
-                        getEntityType(), entityId, clientId);
+            // Logged successful read
         } catch (Exception e) {
             logger.error("Error logging {} retrieval", getEntityType().toLowerCase(), e);
         }
@@ -198,8 +196,7 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
                     );
                     
                     logRepository.save(log);
-                    logger.debug("Logged update for {} with ID: {} for client: {}", 
-                                getEntityType(), entityId, clientId);
+                    // Logged update
                 }
             }
             
@@ -233,8 +230,7 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
                 );
                 
                 logRepository.save(log);
-                logger.debug("Logged successful deletion for {} with ID: {} for client: {}", 
-                            getEntityType(), entityId, clientId);
+                // Logged successful deletion
             } else {
                 // If we can't find the entity, use a generic log
                 logger.warn("Entity not found for deletion with ID: {}", entityId);

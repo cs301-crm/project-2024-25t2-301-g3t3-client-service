@@ -155,10 +155,9 @@ public class AccountServiceLoggingAspect extends DatabaseLoggingAspect {
                 );
                 
                 logRepository.save(log);
-                logger.debug("Logged successful retrieval of {} accounts for client: {}", 
-                            result.size(), clientId);
+                // Logged successful retrieval of accounts
             } else {
-                logger.debug("No accounts found for client: {}", clientId);
+                // No accounts found for client
             }
         } catch (Exception e) {
             logger.error("Error logging accounts retrieval by client ID", e);

@@ -90,7 +90,7 @@ public class LogKafkaLoggingAspect extends KafkaLoggingAspect {
     @AfterReturning(pointcut = "logCreation()", returning = "result")
     public void logAfterDatabaseLogCreation(JoinPoint joinPoint, Log result) {
         try {
-            logger.debug("Publishing log event to Kafka for log ID: {}", result.getId());
+            // Publishing log event to Kafka
             
             com.cs301.shared.protobuf.Log protoLog = com.cs301.shared.protobuf.Log.newBuilder()
                 .setLogId(result.getId())
