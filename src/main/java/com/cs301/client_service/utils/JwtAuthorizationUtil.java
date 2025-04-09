@@ -29,13 +29,10 @@ public class JwtAuthorizationUtil {
      */
     public static boolean isAdmin(Authentication authentication) {
         if (authentication == null) {
-            logger.debug("Authentication is null in isAdmin check");
             return false;
         }
         
-        boolean isAdmin = hasRole(authentication, ROLE_ADMIN);
-        logger.debug("isAdmin check result: {}", isAdmin);
-        return isAdmin;
+        return hasRole(authentication, ROLE_ADMIN);
     }
 
     /**
@@ -45,13 +42,10 @@ public class JwtAuthorizationUtil {
      */
     public static boolean isAgent(Authentication authentication) {
         if (authentication == null) {
-            logger.debug("Authentication is null in isAgent check");
             return false;
         }
         
-        boolean isAgent = hasRole(authentication, ROLE_AGENT);
-        logger.debug("isAgent check result: {}", isAgent);
-        return isAgent;
+        return hasRole(authentication, ROLE_AGENT);
     }
 
     /**
@@ -65,19 +59,17 @@ public class JwtAuthorizationUtil {
             logger.warn("Authentication is null during access validation");
             throw new UnauthorizedAccessException("Authentication required");
         }
-        
-        logger.debug("Validating access for client with agentId: {}", client.getAgentId());
 
         // If admin, always allow access
         if (isAdmin(authentication)) {
-            logger.debug("Access granted: user is ADMIN");
             return;
         }
 
         // If agent, only allow access to clients assigned to them
         if (isAgent(authentication)) {
             String agentId = JWTUtil.getClaim(authentication, JWT_SUBJECT_CLAIM);
-            logger.debug("Agent access check - JWT subject: {}, Client agentId: {}", agentId, client.getAgentId());
+            // Keep this log as it's important for JWT subject checks
+            logger.info("Agent access check - JWT subject: {}, Client agentId: {}", agentId, client.getAgentId());
             
             if (agentId == null || agentId.isEmpty()) {
                 logger.warn("Agent ID from JWT is null or empty");
@@ -90,7 +82,6 @@ public class JwtAuthorizationUtil {
                 throw new UnauthorizedAccessException("Agent does not have access to this client");
             }
             
-            logger.debug("Access granted: Agent ID matches client's agentId");
             return;
         }
 
@@ -140,7 +131,8 @@ public class JwtAuthorizationUtil {
         }
         
         String agentId = JWTUtil.getClaim(authentication, JWT_SUBJECT_CLAIM);
-        logger.debug("Retrieved agent ID from JWT: {}", agentId);
+        // Keep this log as it's important for JWT subject checks
+        logger.info("Retrieved agent ID from JWT: {}", agentId);
         return agentId;
     }
 
@@ -151,10 +143,11 @@ public class JwtAuthorizationUtil {
         }
         
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        logger.debug("User has the following roles: {}", authorities);
+        // Keep this log as it's important for JWT scope checks
+        logger.info("User has the following roles: {}", authorities);
         
         return authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(role::equals);
     }
-} 
+}
