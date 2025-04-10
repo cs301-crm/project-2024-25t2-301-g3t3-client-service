@@ -50,11 +50,11 @@ public class KafkaProducer {
         future.whenComplete((result, ex) -> {
             if (ex == null) {
                 logger.info("Sent message=[{}] with offset=[{}]",
-                    message.toString(),
+                    message,
                     result.getRecordMetadata().offset());
             } else {
                 logger.error("Unable to send message=[{}] due to : {}",
-                    message.toString(),
+                    message,
                     ex.getMessage());
             }
         });

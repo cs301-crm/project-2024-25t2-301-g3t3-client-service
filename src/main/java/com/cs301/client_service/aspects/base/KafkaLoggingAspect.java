@@ -8,7 +8,6 @@ import com.cs301.shared.protobuf.C2C;
 import com.cs301.shared.protobuf.CRUDInfo;
 import com.cs301.client_service.utils.LoggingUtils;
 import org.aspectj.lang.JoinPoint;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 
 import java.util.Map;
@@ -20,8 +19,23 @@ import java.util.Map;
 @Order(2) // Kafka logging should happen after database logging
 public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
     
-    @Autowired
     protected KafkaProducer kafkaProducer;
+    
+    /**
+     * Constructor for dependency injection
+     * 
+     * @param kafkaProducer the kafka producer to be injected
+     */
+    protected KafkaLoggingAspect(KafkaProducer kafkaProducer) {
+        this.kafkaProducer = kafkaProducer;
+    }
+    
+    /**
+     * Default constructor for backward compatibility
+     */
+    protected KafkaLoggingAspect() {
+        // Default constructor for backward compatibility
+    }
     
     /**
      * Get the entity ID from the entity
@@ -55,8 +69,18 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
     
     /**
      * Log after entity creation to Kafka
+     * 
+     * @param joinPoint the join point (not used, kept for backward compatibility)
+     * @param result the entity created
      */
     protected void logAfterCreationToKafka(JoinPoint joinPoint, Object result) {
+        logAfterCreationToKafkaImpl(result);
+    }
+    
+    /**
+     * Implementation of log after entity creation to Kafka
+     */
+    private void logAfterCreationToKafkaImpl(Object result) {
         try {
             if (result == null) {
                 logger.warn("{} is null for {} creation", getEntityType(), getEntityType().toLowerCase());
@@ -66,9 +90,9 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
             String clientId = getClientId(result);
             String clientEmail = getClientEmail(result);
             
-            if (result instanceof Account) {
+            if (result instanceof Account account) {
                 // Use A2C format for accounts
-                logAccountOperationToKafka((Account) result, clientId, clientEmail, "CREATE");
+                logAccountOperationToKafka(account, clientId, clientEmail, "CREATE");
             } else {
                 // Use C2C format for other entities
                 logCreateOperationToKafka(result, clientId, clientEmail);
@@ -83,7 +107,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
     /**
      * Log after entity update to Kafka
      */
-    protected void logAfterUpdateToKafka(JoinPoint joinPoint, Object result, Map<String, Map.Entry<String, String>> changes) {
+    protected void logAfterUpdateToKafka(Object result, Map<String, Map.Entry<String, String>> changes) {
         try {
             if (result == null) {
                 logger.warn("{} is null for {} update", getEntityType(), getEntityType().toLowerCase());
@@ -93,12 +117,12 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
             String clientId = getClientId(result);
             String clientEmail = getClientEmail(result);
             
-            if (result instanceof Account) {
+            if (result instanceof Account account) {
                 // Use A2C format for accounts
-                logAccountOperationToKafka((Account) result, clientId, clientEmail, "UPDATE");
+                logAccountOperationToKafka(account, clientId, clientEmail, "UPDATE");
             } else {
                 // For other entities, use C2C format with changes
-                logUpdateOperationToKafka(null, result, clientId, clientEmail, changes);
+                logUpdateOperationToKafka(result, clientId, clientEmail, changes);
             }
             
             // Update event published to Kafka
@@ -110,7 +134,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
     /**
      * Log after entity deletion to Kafka
      */
-    protected void logAfterDeletionToKafka(String entityId, String clientId, String clientEmail) {
+    protected void logAfterDeletionToKafka(String clientId, String clientEmail) {
         try {
             // For accounts, we would need the account object to use A2C format
             // For now, we'll use C2C format for all entities
@@ -156,7 +180,9 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
                     .build();
             
             // Pass true to indicate successful operation
-            kafkaProducer.produceMessage(entityId, c2c, true);
+            if (kafkaProducer != null) {
+                kafkaProducer.produceMessage(entityId, c2c, true);
+            }
         } catch (Exception e) {
             logException("Kafka create", e);
         }
@@ -165,7 +191,7 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
     /**
      * Log an update operation to Kafka
      */
-    protected void logUpdateOperationToKafka(Object oldEntity, Object newEntity, String clientId, String email, 
+    protected void logUpdateOperationToKafka(Object newEntity, String clientId, String email, 
                                            Map<String, Map.Entry<String, String>> changes) {
         try {
             // Publishing update event to Kafka
@@ -211,7 +237,9 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
                         .build();
                 
                 // Pass true to indicate successful operation
-                kafkaProducer.produceMessage(getMessageKey(newEntity), c2c, true);
+                if (kafkaProducer != null) {
+                    kafkaProducer.produceMessage(getMessageKey(newEntity), c2c, true);
+                }
             }
         } catch (Exception e) {
             logException("Kafka update", e);
@@ -239,7 +267,9 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
                     .build();
             
             // Pass true to indicate successful operation
-            kafkaProducer.produceMessage(entityId, c2c, true);
+            if (kafkaProducer != null) {
+                kafkaProducer.produceMessage(entityId, c2c, true);
+            }
         } catch (Exception e) {
             logException("Kafka delete", e);
         }
@@ -265,7 +295,9 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
                     .build();
             
             // Pass true to indicate successful operation
-            kafkaProducer.produceA2CMessage(accountId, a2c, true);
+            if (kafkaProducer != null) {
+                kafkaProducer.produceA2CMessage(accountId, a2c, true);
+            }
         } catch (Exception e) {
             logger.error("Error logging account {} to Kafka: {}", crudType.toLowerCase(), e.getMessage(), e);
         }
@@ -275,10 +307,10 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
      * Get message key for Kafka
      */
     protected String getMessageKey(Object entity) {
-        if (entity instanceof Client) {
-            return ((Client) entity).getClientId();
-        } else if (entity instanceof Account) {
-            return ((Account) entity).getAccountId();
+        if (entity instanceof Client client) {
+            return client.getClientId();
+        } else if (entity instanceof Account account) {
+            return account.getAccountId();
         } else {
             return "UNKNOWN";
         }
@@ -289,10 +321,10 @@ public abstract class KafkaLoggingAspect extends BaseLoggingAspect {
      */
     @Override
     protected String extractClientId(Object entity) {
-        if (entity instanceof Client) {
-            return ((Client) entity).getClientId();
-        } else if (entity instanceof Account) {
-            return ((Account) entity).getClient().getClientId();
+        if (entity instanceof Client client) {
+            return client.getClientId();
+        } else if (entity instanceof Account account) {
+            return account.getClient().getClientId();
         } else {
             return "UNKNOWN";
         }

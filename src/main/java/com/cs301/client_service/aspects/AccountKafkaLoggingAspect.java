@@ -2,12 +2,11 @@ package com.cs301.client_service.aspects;
 
 import com.cs301.client_service.aspects.base.KafkaLoggingAspect;
 import com.cs301.client_service.models.Account;
-import com.cs301.client_service.repositories.AccountRepository;
+import com.cs301.client_service.producers.KafkaProducer;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,8 +16,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
-    @Autowired
-    private AccountRepository accountRepository;
+    public AccountKafkaLoggingAspect(KafkaProducer kafkaProducer) {
+        super(kafkaProducer);
+    }
 
     @Override
     protected String getEntityId(Object entity) {
@@ -59,8 +59,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
     
     @Override
     protected String getEntityValues(Object entity) {
-        if (entity instanceof Account) {
-            Account account = (Account) entity;
+        if (entity instanceof Account account) {
             return String.format("%s,%s,%s,%s,%s,%s,%s,%s",
                 account.getAccountId(),
                 account.getClient().getClientId(),

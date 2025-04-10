@@ -96,250 +96,250 @@ public class ClientServiceImpl implements ClientService {
         return clientRepository.findWithSearchAndAgentId(agentId, searchQuery, pageable);
     }
 
- @Override
-public Client updateClient(String clientId, ClientDTO clientDTO) {
-    logger.info("Updating client with ID: {}", clientId);
-    
-    // Get a fresh copy of the existing client directly from the repository
-    // This ensures we have the real current state, not an already modified copy
-    Client existingClient = clientRepository.findById(clientId)
-            .orElseThrow(() -> new ClientNotFoundException(clientId));
-    
-    // Create a copy of the existing client for comparison (before state)
-    Client beforeClient = existingClient.toBuilder().build();
-    
-    // Create a new ClientDTO with only the fields that have changed
-    ClientDTO filteredDTO = new ClientDTO();
-    
-    // Always set the clientId
-    filteredDTO.setClientId(clientId);
-    
-    // Only set fields that are different from the existing client
-    ClientDTO existingDTO = clientMapper.toDto(existingClient);
-    
-    if (clientDTO.getFirstName() != null && !clientDTO.getFirstName().equals(existingDTO.getFirstName())) {
-        filteredDTO.setFirstName(clientDTO.getFirstName());
+    @Override
+    public Client updateClient(String clientId, ClientDTO clientDTO) {
+        logger.info("Updating client with ID: {}", clientId);
+        
+        // Get a fresh copy of the existing client directly from the repository
+        // This ensures we have the real current state, not an already modified copy
+        Client existingClient = clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFoundException(clientId));
+        
+        // Create a copy of the existing client for comparison (before state)
+        Client beforeClient = existingClient.toBuilder().build();
+        
+        // Create a new ClientDTO with only the fields that have changed
+        ClientDTO filteredDTO = new ClientDTO();
+        
+        // Always set the clientId
+        filteredDTO.setClientId(clientId);
+        
+        // Only set fields that are different from the existing client
+        ClientDTO existingDTO = clientMapper.toDto(existingClient);
+        
+        if (clientDTO.getFirstName() != null && !clientDTO.getFirstName().equals(existingDTO.getFirstName())) {
+            filteredDTO.setFirstName(clientDTO.getFirstName());
+        }
+        
+        if (clientDTO.getLastName() != null && !clientDTO.getLastName().equals(existingDTO.getLastName())) {
+            filteredDTO.setLastName(clientDTO.getLastName());
+        }
+        
+        if (clientDTO.getDateOfBirth() != null && !clientDTO.getDateOfBirth().equals(existingDTO.getDateOfBirth())) {
+            filteredDTO.setDateOfBirth(clientDTO.getDateOfBirth());
+        }
+        
+        if (clientDTO.getGender() != null && !clientDTO.getGender().equals(existingDTO.getGender())) {
+            filteredDTO.setGender(clientDTO.getGender());
+        }
+        
+        if (clientDTO.getEmailAddress() != null && !clientDTO.getEmailAddress().equals(existingDTO.getEmailAddress())) {
+            filteredDTO.setEmailAddress(clientDTO.getEmailAddress());
+        }
+        
+        if (clientDTO.getPhoneNumber() != null && !clientDTO.getPhoneNumber().equals(existingDTO.getPhoneNumber())) {
+            filteredDTO.setPhoneNumber(clientDTO.getPhoneNumber());
+        }
+        
+        if (clientDTO.getAddress() != null && !clientDTO.getAddress().equals(existingDTO.getAddress())) {
+            filteredDTO.setAddress(clientDTO.getAddress());
+        }
+        
+        if (clientDTO.getCity() != null && !clientDTO.getCity().equals(existingDTO.getCity())) {
+            filteredDTO.setCity(clientDTO.getCity());
+        }
+        
+        if (clientDTO.getState() != null && !clientDTO.getState().equals(existingDTO.getState())) {
+            filteredDTO.setState(clientDTO.getState());
+        }
+        
+        if (clientDTO.getCountry() != null && !clientDTO.getCountry().equals(existingDTO.getCountry())) {
+            filteredDTO.setCountry(clientDTO.getCountry());
+        }
+        
+        if (clientDTO.getPostalCode() != null && !clientDTO.getPostalCode().equals(existingDTO.getPostalCode())) {
+            filteredDTO.setPostalCode(clientDTO.getPostalCode());
+        }
+        
+        if (clientDTO.getNric() != null && !clientDTO.getNric().equals(existingDTO.getNric())) {
+            filteredDTO.setNric(clientDTO.getNric());
+        }
+        
+        if (clientDTO.getAgentId() != null && !clientDTO.getAgentId().equals(existingDTO.getAgentId())) {
+            filteredDTO.setAgentId(clientDTO.getAgentId());
+        }
+        
+        if (clientDTO.getVerificationStatus() != null && !clientDTO.getVerificationStatus().equals(existingDTO.getVerificationStatus())) {
+            filteredDTO.setVerificationStatus(clientDTO.getVerificationStatus());
+        }
+        
+        // Apply partial updates to the existing client
+        Client updatedClient = clientMapper.applyPartialUpdates(existingClient, filteredDTO);
+        
+        // Ensure clientId is preserved
+        updatedClient.setClientId(clientId);
+        
+        // Check for any actual changes in key fields
+        boolean hasChanges = 
+            !equals(beforeClient.getFirstName(), updatedClient.getFirstName()) ||
+            !equals(beforeClient.getLastName(), updatedClient.getLastName()) ||
+            !equals(beforeClient.getEmailAddress(), updatedClient.getEmailAddress()) ||
+            !equals(beforeClient.getPhoneNumber(), updatedClient.getPhoneNumber()) ||
+            !equals(beforeClient.getAddress(), updatedClient.getAddress()) ||
+            !equals(beforeClient.getCity(), updatedClient.getCity()) ||
+            !equals(beforeClient.getState(), updatedClient.getState()) ||
+            !equals(beforeClient.getCountry(), updatedClient.getCountry()) ||
+            !equals(beforeClient.getPostalCode(), updatedClient.getPostalCode()) ||
+            !equals(beforeClient.getNric(), updatedClient.getNric()) ||
+            !equals(beforeClient.getGender(), updatedClient.getGender()) ||
+            !equals(beforeClient.getDateOfBirth(), updatedClient.getDateOfBirth()) ||
+            !equals(beforeClient.getAgentId(), updatedClient.getAgentId()) ||
+            !equals(beforeClient.getVerificationStatus(), updatedClient.getVerificationStatus());
+        
+        String clientEmail = updatedClient.getEmailAddress();
+        
+        try {
+            setClientContext(clientId, clientEmail);
+            
+            // Send Kafka message if there are changes
+            if (hasChanges) {
+                sendKafkaMessageSafely(() -> 
+                    sendClientUpdateKafkaMessage(clientId, clientEmail, beforeClient, updatedClient),
+                    "client update"
+                );
+            } else {
+                logger.info("No changes detected, skipping Kafka message");
+            }
+            
+            // Save the updated client
+            Client savedClient = clientRepository.save(updatedClient);
+            
+            // Create a log entry for this update with pipe-separated values for changed fields
+            StringBuilder logAttributeNames = new StringBuilder();
+            StringBuilder logBeforeValues = new StringBuilder();
+            StringBuilder logAfterValues = new StringBuilder();
+            
+            // Check each field for changes
+            if (!equals(beforeClient.getFirstName(), savedClient.getFirstName())) {
+                logAttributeNames.append("First Name|");
+                logBeforeValues.append(toString(beforeClient.getFirstName())).append("|");
+                logAfterValues.append(toString(savedClient.getFirstName())).append("|");
+            }
+            
+            if (!equals(beforeClient.getLastName(), savedClient.getLastName())) {
+                logAttributeNames.append("Last Name|");
+                logBeforeValues.append(toString(beforeClient.getLastName())).append("|");
+                logAfterValues.append(toString(savedClient.getLastName())).append("|");
+            }
+            
+            if (!equals(beforeClient.getEmailAddress(), savedClient.getEmailAddress())) {
+                logAttributeNames.append("Email|");
+                logBeforeValues.append(toString(beforeClient.getEmailAddress())).append("|");
+                logAfterValues.append(toString(savedClient.getEmailAddress())).append("|");
+            }
+            
+            if (!equals(beforeClient.getPhoneNumber(), savedClient.getPhoneNumber())) {
+                logAttributeNames.append("Phone|");
+                logBeforeValues.append(toString(beforeClient.getPhoneNumber())).append("|");
+                logAfterValues.append(toString(savedClient.getPhoneNumber())).append("|");
+            }
+            
+            if (!equals(beforeClient.getAddress(), savedClient.getAddress())) {
+                logAttributeNames.append("Address|");
+                logBeforeValues.append(toString(beforeClient.getAddress())).append("|");
+                logAfterValues.append(toString(savedClient.getAddress())).append("|");
+            }
+            
+            if (!equals(beforeClient.getCity(), savedClient.getCity())) {
+                logAttributeNames.append("City|");
+                logBeforeValues.append(toString(beforeClient.getCity())).append("|");
+                logAfterValues.append(toString(savedClient.getCity())).append("|");
+            }
+            
+            if (!equals(beforeClient.getState(), savedClient.getState())) {
+                logAttributeNames.append("State|");
+                logBeforeValues.append(toString(beforeClient.getState())).append("|");
+                logAfterValues.append(toString(savedClient.getState())).append("|");
+            }
+            
+            if (!equals(beforeClient.getCountry(), savedClient.getCountry())) {
+                logAttributeNames.append("Country|");
+                logBeforeValues.append(toString(beforeClient.getCountry())).append("|");
+                logAfterValues.append(toString(savedClient.getCountry())).append("|");
+            }
+            
+            if (!equals(beforeClient.getPostalCode(), savedClient.getPostalCode())) {
+                logAttributeNames.append("Postal Code|");
+                logBeforeValues.append(toString(beforeClient.getPostalCode())).append("|");
+                logAfterValues.append(toString(savedClient.getPostalCode())).append("|");
+            }
+            
+            if (!equals(beforeClient.getNric(), savedClient.getNric())) {
+                logAttributeNames.append("NRIC|");
+                logBeforeValues.append(toString(beforeClient.getNric())).append("|");
+                logAfterValues.append(toString(savedClient.getNric())).append("|");
+            }
+            
+            if (!equals(beforeClient.getDateOfBirth(), savedClient.getDateOfBirth())) {
+                logAttributeNames.append("Date of Birth|");
+                logBeforeValues.append(toString(beforeClient.getDateOfBirth())).append("|");
+                logAfterValues.append(toString(savedClient.getDateOfBirth())).append("|");
+            }
+            
+            if (!equals(beforeClient.getGender(), savedClient.getGender())) {
+                logAttributeNames.append("Gender|");
+                logBeforeValues.append(toString(beforeClient.getGender())).append("|");
+                logAfterValues.append(toString(savedClient.getGender())).append("|");
+            }
+            
+            if (!equals(beforeClient.getAgentId(), savedClient.getAgentId())) {
+                logAttributeNames.append("Agent ID|");
+                logBeforeValues.append(toString(beforeClient.getAgentId())).append("|");
+                logAfterValues.append(toString(savedClient.getAgentId())).append("|");
+            }
+            
+            if (!equals(beforeClient.getVerificationStatus(), savedClient.getVerificationStatus())) {
+                logAttributeNames.append("Verification Status|");
+                logBeforeValues.append(toString(beforeClient.getVerificationStatus())).append("|");
+                logAfterValues.append(toString(savedClient.getVerificationStatus())).append("|");
+            }
+            
+            // Remove trailing pipes
+            String logAttributes = logAttributeNames.toString();
+            String logBefore = logBeforeValues.toString();
+            String logAfter = logAfterValues.toString();
+            
+            if (logAttributes.endsWith("|")) {
+                logAttributes = logAttributes.substring(0, logAttributes.length() - 1);
+            }
+            
+            if (logBefore.endsWith("|")) {
+                logBefore = logBefore.substring(0, logBefore.length() - 1);
+            }
+            
+            if (logAfter.endsWith("|")) {
+                logAfter = logAfter.substring(0, logAfter.length() - 1);
+            }
+            
+            Log log = Log.builder()
+                .clientId(clientId)
+                .crudType(Log.CrudType.UPDATE)
+                .attributeName(logAttributes)  // For UPDATE logs, use the pipe-separated list of attributes
+                .beforeValue(logBefore)
+                .afterValue(logAfter)
+                .agentId(LoggingUtils.getCurrentAgentId())
+                .dateTime(java.time.LocalDateTime.now())
+                .build();
+            
+            // Save the log entry
+            Log savedLog = logRepository.save(log);
+            logger.info("Created log entry with ID: {}", savedLog.getId());
+            
+            return savedClient;
+        } finally {
+            ClientContextHolder.clear();
+        }
     }
-    
-    if (clientDTO.getLastName() != null && !clientDTO.getLastName().equals(existingDTO.getLastName())) {
-        filteredDTO.setLastName(clientDTO.getLastName());
-    }
-    
-    if (clientDTO.getDateOfBirth() != null && !clientDTO.getDateOfBirth().equals(existingDTO.getDateOfBirth())) {
-        filteredDTO.setDateOfBirth(clientDTO.getDateOfBirth());
-    }
-    
-    if (clientDTO.getGender() != null && !clientDTO.getGender().equals(existingDTO.getGender())) {
-        filteredDTO.setGender(clientDTO.getGender());
-    }
-    
-    if (clientDTO.getEmailAddress() != null && !clientDTO.getEmailAddress().equals(existingDTO.getEmailAddress())) {
-        filteredDTO.setEmailAddress(clientDTO.getEmailAddress());
-    }
-    
-    if (clientDTO.getPhoneNumber() != null && !clientDTO.getPhoneNumber().equals(existingDTO.getPhoneNumber())) {
-        filteredDTO.setPhoneNumber(clientDTO.getPhoneNumber());
-    }
-    
-    if (clientDTO.getAddress() != null && !clientDTO.getAddress().equals(existingDTO.getAddress())) {
-        filteredDTO.setAddress(clientDTO.getAddress());
-    }
-    
-    if (clientDTO.getCity() != null && !clientDTO.getCity().equals(existingDTO.getCity())) {
-        filteredDTO.setCity(clientDTO.getCity());
-    }
-    
-    if (clientDTO.getState() != null && !clientDTO.getState().equals(existingDTO.getState())) {
-        filteredDTO.setState(clientDTO.getState());
-    }
-    
-    if (clientDTO.getCountry() != null && !clientDTO.getCountry().equals(existingDTO.getCountry())) {
-        filteredDTO.setCountry(clientDTO.getCountry());
-    }
-    
-    if (clientDTO.getPostalCode() != null && !clientDTO.getPostalCode().equals(existingDTO.getPostalCode())) {
-        filteredDTO.setPostalCode(clientDTO.getPostalCode());
-    }
-    
-    if (clientDTO.getNric() != null && !clientDTO.getNric().equals(existingDTO.getNric())) {
-        filteredDTO.setNric(clientDTO.getNric());
-    }
-    
-    if (clientDTO.getAgentId() != null && !clientDTO.getAgentId().equals(existingDTO.getAgentId())) {
-        filteredDTO.setAgentId(clientDTO.getAgentId());
-    }
-    
-    if (clientDTO.getVerificationStatus() != null && !clientDTO.getVerificationStatus().equals(existingDTO.getVerificationStatus())) {
-        filteredDTO.setVerificationStatus(clientDTO.getVerificationStatus());
-    }
-    
-    // Apply partial updates to the existing client
-    Client updatedClient = clientMapper.applyPartialUpdates(existingClient, filteredDTO);
-    
-    // Ensure clientId is preserved
-    updatedClient.setClientId(clientId);
-    
-    // Check for any actual changes in key fields
-    boolean hasChanges = 
-        !equals(beforeClient.getFirstName(), updatedClient.getFirstName()) ||
-        !equals(beforeClient.getLastName(), updatedClient.getLastName()) ||
-        !equals(beforeClient.getEmailAddress(), updatedClient.getEmailAddress()) ||
-        !equals(beforeClient.getPhoneNumber(), updatedClient.getPhoneNumber()) ||
-        !equals(beforeClient.getAddress(), updatedClient.getAddress()) ||
-        !equals(beforeClient.getCity(), updatedClient.getCity()) ||
-        !equals(beforeClient.getState(), updatedClient.getState()) ||
-        !equals(beforeClient.getCountry(), updatedClient.getCountry()) ||
-        !equals(beforeClient.getPostalCode(), updatedClient.getPostalCode()) ||
-        !equals(beforeClient.getNric(), updatedClient.getNric()) ||
-        !equals(beforeClient.getGender(), updatedClient.getGender()) ||
-        !equals(beforeClient.getDateOfBirth(), updatedClient.getDateOfBirth()) ||
-        !equals(beforeClient.getAgentId(), updatedClient.getAgentId()) ||
-        !equals(beforeClient.getVerificationStatus(), updatedClient.getVerificationStatus());
-    
-    String clientEmail = updatedClient.getEmailAddress();
-    
-    try {
-        setClientContext(clientId, clientEmail);
-        
-        // Send Kafka message if there are changes
-        if (hasChanges) {
-            sendKafkaMessageSafely(() -> 
-                sendClientUpdateKafkaMessage(clientId, clientEmail, beforeClient, updatedClient),
-                "client update"
-            );
-        } else {
-            logger.info("No changes detected, skipping Kafka message");
-        }
-        
-        // Save the updated client
-        Client savedClient = clientRepository.save(updatedClient);
-        
-        // Create a log entry for this update with pipe-separated values for changed fields
-        StringBuilder logAttributeNames = new StringBuilder();
-        StringBuilder logBeforeValues = new StringBuilder();
-        StringBuilder logAfterValues = new StringBuilder();
-        
-        // Check each field for changes
-        if (!equals(beforeClient.getFirstName(), savedClient.getFirstName())) {
-            logAttributeNames.append("First Name|");
-            logBeforeValues.append(toString(beforeClient.getFirstName())).append("|");
-            logAfterValues.append(toString(savedClient.getFirstName())).append("|");
-        }
-        
-        if (!equals(beforeClient.getLastName(), savedClient.getLastName())) {
-            logAttributeNames.append("Last Name|");
-            logBeforeValues.append(toString(beforeClient.getLastName())).append("|");
-            logAfterValues.append(toString(savedClient.getLastName())).append("|");
-        }
-        
-        if (!equals(beforeClient.getEmailAddress(), savedClient.getEmailAddress())) {
-            logAttributeNames.append("Email|");
-            logBeforeValues.append(toString(beforeClient.getEmailAddress())).append("|");
-            logAfterValues.append(toString(savedClient.getEmailAddress())).append("|");
-        }
-        
-        if (!equals(beforeClient.getPhoneNumber(), savedClient.getPhoneNumber())) {
-            logAttributeNames.append("Phone|");
-            logBeforeValues.append(toString(beforeClient.getPhoneNumber())).append("|");
-            logAfterValues.append(toString(savedClient.getPhoneNumber())).append("|");
-        }
-        
-        if (!equals(beforeClient.getAddress(), savedClient.getAddress())) {
-            logAttributeNames.append("Address|");
-            logBeforeValues.append(toString(beforeClient.getAddress())).append("|");
-            logAfterValues.append(toString(savedClient.getAddress())).append("|");
-        }
-        
-        if (!equals(beforeClient.getCity(), savedClient.getCity())) {
-            logAttributeNames.append("City|");
-            logBeforeValues.append(toString(beforeClient.getCity())).append("|");
-            logAfterValues.append(toString(savedClient.getCity())).append("|");
-        }
-        
-        if (!equals(beforeClient.getState(), savedClient.getState())) {
-            logAttributeNames.append("State|");
-            logBeforeValues.append(toString(beforeClient.getState())).append("|");
-            logAfterValues.append(toString(savedClient.getState())).append("|");
-        }
-        
-        if (!equals(beforeClient.getCountry(), savedClient.getCountry())) {
-            logAttributeNames.append("Country|");
-            logBeforeValues.append(toString(beforeClient.getCountry())).append("|");
-            logAfterValues.append(toString(savedClient.getCountry())).append("|");
-        }
-        
-        if (!equals(beforeClient.getPostalCode(), savedClient.getPostalCode())) {
-            logAttributeNames.append("Postal Code|");
-            logBeforeValues.append(toString(beforeClient.getPostalCode())).append("|");
-            logAfterValues.append(toString(savedClient.getPostalCode())).append("|");
-        }
-        
-        if (!equals(beforeClient.getNric(), savedClient.getNric())) {
-            logAttributeNames.append("NRIC|");
-            logBeforeValues.append(toString(beforeClient.getNric())).append("|");
-            logAfterValues.append(toString(savedClient.getNric())).append("|");
-        }
-        
-        if (!equals(beforeClient.getDateOfBirth(), savedClient.getDateOfBirth())) {
-            logAttributeNames.append("Date of Birth|");
-            logBeforeValues.append(toString(beforeClient.getDateOfBirth())).append("|");
-            logAfterValues.append(toString(savedClient.getDateOfBirth())).append("|");
-        }
-        
-        if (!equals(beforeClient.getGender(), savedClient.getGender())) {
-            logAttributeNames.append("Gender|");
-            logBeforeValues.append(toString(beforeClient.getGender())).append("|");
-            logAfterValues.append(toString(savedClient.getGender())).append("|");
-        }
-        
-        if (!equals(beforeClient.getAgentId(), savedClient.getAgentId())) {
-            logAttributeNames.append("Agent ID|");
-            logBeforeValues.append(toString(beforeClient.getAgentId())).append("|");
-            logAfterValues.append(toString(savedClient.getAgentId())).append("|");
-        }
-        
-        if (!equals(beforeClient.getVerificationStatus(), savedClient.getVerificationStatus())) {
-            logAttributeNames.append("Verification Status|");
-            logBeforeValues.append(toString(beforeClient.getVerificationStatus())).append("|");
-            logAfterValues.append(toString(savedClient.getVerificationStatus())).append("|");
-        }
-        
-        // Remove trailing pipes
-        String logAttributes = logAttributeNames.toString();
-        String logBefore = logBeforeValues.toString();
-        String logAfter = logAfterValues.toString();
-        
-        if (logAttributes.endsWith("|")) {
-            logAttributes = logAttributes.substring(0, logAttributes.length() - 1);
-        }
-        
-        if (logBefore.endsWith("|")) {
-            logBefore = logBefore.substring(0, logBefore.length() - 1);
-        }
-        
-        if (logAfter.endsWith("|")) {
-            logAfter = logAfter.substring(0, logAfter.length() - 1);
-        }
-        
-        Log log = Log.builder()
-            .clientId(clientId)
-            .crudType(Log.CrudType.UPDATE)
-            .attributeName(logAttributes)  // For UPDATE logs, use the pipe-separated list of attributes
-            .beforeValue(logBefore)
-            .afterValue(logAfter)
-            .agentId(LoggingUtils.getCurrentAgentId())
-            .dateTime(java.time.LocalDateTime.now())
-            .build();
-        
-        // Save the log entry
-        Log savedLog = logRepository.save(log);
-        logger.info("Created log entry with ID: {}", savedLog.getId());
-        
-        return savedClient;
-    } finally {
-        ClientContextHolder.clear();
-    }
-}
 
     @Override
     public void deleteClient(String clientId) {
