@@ -74,9 +74,11 @@ class AccountRepositoryTest {
         List<Account> foundAccounts = accountRepository.findByClientClientId(testClient.getClientId());
 
         // Then: the account should be found
-        assertThat(foundAccounts).isNotEmpty();
-        assertThat(foundAccounts).hasSize(1);
-        assertThat(foundAccounts.get(0).getAccountId()).isEqualTo(testAccount.getAccountId());
+        assertThat(foundAccounts)
+            .isNotEmpty()
+            .hasSize(1)
+            .extracting(Account::getAccountId)
+            .containsExactly(testAccount.getAccountId());
     }
 
     @Test
