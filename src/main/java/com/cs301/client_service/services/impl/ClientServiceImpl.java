@@ -98,7 +98,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public Client updateClient(String clientId, ClientDTO clientDTO) {
-        logger.info("Updating client with ID: {}", clientId);
+        logger.info("Updating client");
         
         // Get a fresh copy of the existing client directly from the repository
         // This ensures we have the real current state, not an already modified copy
@@ -333,7 +333,7 @@ public class ClientServiceImpl implements ClientService {
             
             // Save the log entry
             Log savedLog = logRepository.save(log);
-            logger.info("Created log entry with ID: {}", savedLog.getId());
+            logger.info("Created log entry");
             
             return savedClient;
         } finally {
@@ -348,7 +348,7 @@ public class ClientServiceImpl implements ClientService {
         
         try {
             setClientContext(clientId, clientEmail);
-            logger.info("Deleting client {} with email {}", clientId, clientEmail);
+            logger.info("Deleting client");
             
             sendKafkaMessageSafely(() -> 
                 sendClientDeleteKafkaMessage(clientId, clientEmail),
@@ -383,17 +383,17 @@ public class ClientServiceImpl implements ClientService {
     }
     
     private void deleteClientData(String clientId) {
-        logger.info("Deleting associated accounts for client: {}", clientId);
+        logger.info("Deleting associated accounts");
         accountService.deleteAccountsByClientId(clientId);
         
-        logger.info("Deleting the client: {}", clientId);
+        logger.info("Deleting the client");
         clientRepository.deleteById(clientId);
         
-        logger.info("Client deleted: {}", clientId);
+        logger.info("Client deleted");
     }
     
     private void sendClientUpdateKafkaMessage(String clientId, String clientEmail, Client existingClient, Client updatedClient) {
-        logger.info("Sending Kafka message for client update - clientId: {}", clientId);
+        logger.info("Sending Kafka message for client update");
         
         // Create lists to track changed fields
         StringBuilder attributeNames = new StringBuilder();
@@ -524,7 +524,7 @@ public class ClientServiceImpl implements ClientService {
     }
     
     private void sendClientDeleteKafkaMessage(String clientId, String clientEmail) {
-        logger.info("Sending C2C message for client deletion - clientId: {}", clientId);
+        logger.info("Sending C2C message for client deletion");
         
         // Create an empty CRUDInfo with empty attribute, beforeValue, and afterValue
         CRUDInfo crudInfo = CRUDInfo.newBuilder()
