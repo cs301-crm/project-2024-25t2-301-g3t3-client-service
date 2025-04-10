@@ -144,9 +144,11 @@ class AccountServiceImplTest {
         List<Account> results = accountService.getAccountsByClientId(clientId);
 
         // Then
-        assertThat(results).isNotEmpty();
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).getAccountId()).isEqualTo(accountId);
+        assertThat(results)
+            .isNotEmpty()
+            .hasSize(1)
+            .extracting(Account::getAccountId)
+            .containsExactly(accountId);
         verify(clientRepository, times(1)).existsById(clientId);
         verify(accountRepository, times(1)).findByClientClientId(clientId);
     }
