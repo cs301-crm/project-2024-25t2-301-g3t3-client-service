@@ -25,7 +25,6 @@ import java.util.Map;
 public class AccountServiceLoggingAspect extends DatabaseLoggingAspect {
     private final AccountRepository accountRepository;
     private final LogRepository logRepository;
-    private final Logger logger = LoggerFactory.getLogger(AccountServiceLoggingAspect.class);
     
     public AccountServiceLoggingAspect(AccountRepository accountRepository, LogRepository logRepository) {
         this.accountRepository = accountRepository;

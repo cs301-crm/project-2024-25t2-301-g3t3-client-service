@@ -22,7 +22,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
     @Override
     protected String getEntityId(Object entity) {
-        if (entity instanceof Account account) {
+        if (entity instanceof Account) {
             return ((Account) entity).getAccountId();
         }
         return null;
@@ -30,7 +30,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
     @Override
     protected String getClientId(Object entity) {
-        if (entity instanceof Account account && ((Account) entity).getClient() != null) {
+        if (entity instanceof Account && ((Account) entity).getClient() != null) {
             return ((Account) entity).getClient().getClientId();
         }
         return null;
@@ -38,7 +38,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
     @Override
     protected String getClientEmail(Object entity) {
-        if (entity instanceof Account account && ((Account) entity).getClient() != null) {
+        if (entity instanceof Account && ((Account) entity).getClient() != null) {
             return ((Account) entity).getClient().getEmailAddress();
         }
         return null;
@@ -51,7 +51,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
     @Override
     protected String getAttributeNames(Object entity) {
-        if (entity instanceof Account account) {
+        if (entity instanceof Account) {
             return "accountId,clientId,accountType,accountStatus,openingDate,initialDeposit,currency,branchId";
         }
         return "";
