@@ -22,22 +22,22 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     
     @Query("SELECT t FROM Transaction t WHERE t.client.clientId = :clientId " +
            "AND (:searchQuery IS NULL OR :searchQuery = '' OR " +
-           "CAST(t.client.firstName as text) LIKE CONCAT('%', :searchQuery, '%') OR " +
-           "CAST(t.client.lastName as text) LIKE CONCAT('%', :searchQuery, '%') OR " +
-           "CAST(t.amount as text) LIKE CONCAT('%', :searchQuery, '%') OR " +
-           "CAST(t.status as text) LIKE CONCAT('%', :searchQuery, '%') OR " +
-           "CAST(t.description as text) LIKE CONCAT('%', :searchQuery, '%'))")
+           "LOWER(CAST(t.client.firstName as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.client.lastName as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.amount as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.status as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.description as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')))")
     Page<Transaction> searchByClientId(@Param("clientId") String clientId, 
                                       @Param("searchQuery") String searchQuery, 
                                       Pageable pageable);
     
     @Query("SELECT t FROM Transaction t WHERE t.client.agentId = :agentId " +
            "AND (:searchQuery IS NULL OR :searchQuery = '' OR " +
-           "CAST(t.client.firstName as text) LIKE CONCAT('%', :searchQuery, '%') OR " +
-           "CAST(t.client.lastName as text) LIKE CONCAT('%', :searchQuery, '%') OR " +
-           "CAST(t.amount as text) LIKE CONCAT('%', :searchQuery, '%') OR " +
-           "CAST(t.status as text) LIKE CONCAT('%', :searchQuery, '%') OR " +
-           "CAST(t.description as text) LIKE CONCAT('%', :searchQuery, '%'))")
+           "LOWER(CAST(t.client.firstName as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.client.lastName as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.amount as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.status as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.description as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')))")
     Page<Transaction> searchByAgentId(@Param("agentId") String agentId, 
                                      @Param("searchQuery") String searchQuery, 
                                      Pageable pageable);

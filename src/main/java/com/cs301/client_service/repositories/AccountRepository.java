@@ -32,16 +32,16 @@ public interface AccountRepository extends JpaRepository<Account, String> {
            "(:type IS NULL OR a.accountType = :type) AND " +
            "(:status IS NULL OR a.accountStatus = :status) AND " +
            "(:search IS NULL OR :search = '' OR " +
-           "CAST(a.accountId as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.currency as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.branchId as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.client.firstName as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.client.lastName as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.client.emailAddress as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.client.phoneNumber as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.client.nric as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.client.clientId as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(a.client.agentId as text) LIKE CONCAT('%', :search, '%'))")
+           "LOWER(CAST(a.accountId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.currency as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.branchId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.firstName as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.lastName as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.emailAddress as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.phoneNumber as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.nric as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(a.client.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Account> findWithSearchAndFilters(
             @Param("agentId") String agentId,
             @Param("type") AccountType type,
