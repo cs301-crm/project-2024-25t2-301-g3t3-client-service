@@ -2,6 +2,7 @@ package com.cs301.client_service.aspects;
 
 import com.cs301.client_service.aspects.base.KafkaLoggingAspect;
 import com.cs301.client_service.models.Account;
+import com.cs301.client_service.producers.KafkaProducer;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
@@ -14,6 +15,10 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
+
+    public AccountKafkaLoggingAspect(KafkaProducer kafkaProducer) {
+        super(kafkaProducer);
+    }
 
     @Override
     protected String getEntityId(Object entity) {

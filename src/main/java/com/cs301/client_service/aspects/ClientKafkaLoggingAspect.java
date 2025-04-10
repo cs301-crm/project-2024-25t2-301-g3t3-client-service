@@ -1,6 +1,7 @@
 package com.cs301.client_service.aspects;
 import com.cs301.client_service.aspects.base.KafkaLoggingAspect;
 import com.cs301.client_service.models.Client;
+import com.cs301.client_service.producers.KafkaProducer;
 import com.cs301.client_service.repositories.ClientRepository;
 import com.cs301.client_service.utils.LoggingUtils;
 import org.aspectj.lang.JoinPoint;
@@ -17,7 +18,8 @@ import org.springframework.stereotype.Component;
 public class ClientKafkaLoggingAspect extends KafkaLoggingAspect {
     private final ClientRepository clientRepository;
     
-    public ClientKafkaLoggingAspect(ClientRepository clientRepository) {
+    public ClientKafkaLoggingAspect(ClientRepository clientRepository, KafkaProducer kafkaProducer) {
+        super(kafkaProducer);
         this.clientRepository = clientRepository;
     }
     

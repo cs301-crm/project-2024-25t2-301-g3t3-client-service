@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class LogMapper {
@@ -49,6 +48,6 @@ public class LogMapper {
     public List<LogDTO> toDTOList(List<Log> logs) {
         return logs.stream()
                 .map(this::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

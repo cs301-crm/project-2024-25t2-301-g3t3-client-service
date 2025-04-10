@@ -28,7 +28,6 @@ public class AccountServiceLoggingAspect extends DatabaseLoggingAspect {
     private final Logger logger = LoggerFactory.getLogger(AccountServiceLoggingAspect.class);
     
     public AccountServiceLoggingAspect(AccountRepository accountRepository, LogRepository logRepository) {
-        super();
         this.accountRepository = accountRepository;
         this.logRepository = logRepository;
     }

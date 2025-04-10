@@ -6,6 +6,7 @@ import com.cs301.client_service.models.Log;
 import com.cs301.client_service.repositories.LogRepository;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.annotation.Propagation;
@@ -20,7 +21,7 @@ import java.util.Optional;
  */
 @Order(1) // Database logging should happen first
 public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
-    
+    @Autowired
     protected LogRepository logRepository;
     
     /**

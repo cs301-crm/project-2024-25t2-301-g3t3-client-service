@@ -1,6 +1,5 @@
 package com.cs301.client_service.controllers;
 
-import com.cs301.client_service.constants.TransactionStatus;
 import com.cs301.client_service.dtos.TransactionDTO;
 import com.cs301.client_service.exceptions.UnauthorizedAccessException;
 import com.cs301.client_service.models.Client;
@@ -15,7 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/transactions")
@@ -25,7 +23,6 @@ public class TransactionController {
     private final TransactionService transactionService;
     private final ClientService clientService;
 
-    @Autowired
     public TransactionController(TransactionService transactionService, ClientService clientService) {
         this.transactionService = transactionService;
         this.clientService = clientService;

@@ -19,7 +19,6 @@ public class TransactionMapper {
     private final ClientRepository clientRepository;
     private final AccountRepository accountRepository;
 
-    @Autowired
     public TransactionMapper(ClientRepository clientRepository, AccountRepository accountRepository) {
         this.clientRepository = clientRepository;
         this.accountRepository = accountRepository;
@@ -48,7 +47,7 @@ public class TransactionMapper {
     public List<TransactionDTO> toDTOList(List<Transaction> transactions) {
         return transactions.stream()
                 .map(this::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public Transaction toEntity(TransactionDTO dto) {

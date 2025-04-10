@@ -19,10 +19,8 @@ public class LogKafkaLoggingAspect extends KafkaLoggingAspect {
     private final LogRepository logRepository;
     
     public LogKafkaLoggingAspect(LogRepository logRepository, KafkaProducer kafkaProducer) {
-        super();
+        super(kafkaProducer);
         this.logRepository = logRepository;
-        // kafkaProducer is passed to the parent class through constructor
-        super.kafkaProducer = kafkaProducer;
     }
     
     @Override

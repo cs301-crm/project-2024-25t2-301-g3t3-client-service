@@ -104,7 +104,7 @@ public class ClientMapper {
         
         return models.stream()
                 .map(this::toListDto)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     /**

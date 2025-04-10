@@ -104,7 +104,6 @@ public class AccountServiceImpl implements AccountService {
             );
             
             accountRepository.deleteById(accountId);
-            logger.info("Account deleted: {}", accountId);
         } finally {
             ClientContextHolder.clear();
         }
@@ -117,7 +116,7 @@ public class AccountServiceImpl implements AccountService {
         List<Account> accounts = accountRepository.findByClientClientId(clientId);
         
         if (accounts.isEmpty()) {
-            logger.info("No accounts found for client ID: {}", clientId);
+            logger.info("No accounts found for client ID");
             return;
         }
         
@@ -151,7 +150,6 @@ public class AccountServiceImpl implements AccountService {
                         account.getAccountType().toString() : DEFAULT_ACCOUNT_TYPE;
                 
                 setClientContext(context.clientId, context.clientEmail, context.accountType);
-                logger.info("Processing account deletion - accountId: {}, clientId: {}", accountId, context.clientId);
             }
         }
         
@@ -174,7 +172,7 @@ public class AccountServiceImpl implements AccountService {
     }
     
     private void sendAccountDeleteKafkaMessage(String accountId, String clientId, String clientEmail, String accountType) {
-        logger.info("Sending A2C message for account deletion - accountId: {}", accountId);
+        logger.info("Sending A2C message for account deletion");
         
         A2C a2c = A2C.newBuilder()
                 .setAgentId(LoggingUtils.getCurrentAgentId())

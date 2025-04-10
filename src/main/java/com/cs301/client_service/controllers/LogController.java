@@ -25,7 +25,8 @@ import java.util.List;
 public class LogController {
 
     private static final Logger logger = LoggerFactory.getLogger(LogController.class);
-    
+    private static final String DATE_TIME = "dateTime";
+
     private final LogService logService;
     private final LogMapper logMapper;
     private final ClientService clientService;
@@ -49,7 +50,7 @@ public class LogController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, DATE_TIME));
         Page<Log> logsPage;
         
         // Authorization check based on user role
@@ -98,7 +99,7 @@ public class LogController {
         // Handle null or empty searchQuery
         String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
         
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, DATE_TIME));
         Page<Log> logsPage = logService.getLogsByClientId(clientId, normalizedSearchQuery, pageable);
         
         List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
@@ -119,7 +120,7 @@ public class LogController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, DATE_TIME));
         Page<Log> logsPage;
         
         // Authorization check based on user role
@@ -166,7 +167,7 @@ public class LogController {
         // Handle null or empty searchQuery
         String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
         
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "dateTime"));
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, DATE_TIME));
         Page<Log> logsPage = logService.getLogsByAgentId(agentId, normalizedSearchQuery, pageable);
         
         List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
