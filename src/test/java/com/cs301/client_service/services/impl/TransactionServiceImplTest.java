@@ -13,7 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -177,7 +176,7 @@ class TransactionServiceImplTest {
             
             List<TransactionDTO> transactionDTOs = Arrays.asList(testTransactionDTO, anotherTransactionDTO);
             
-            when(transactionRepository.searchByClientId(eq(clientId), eq(searchQuery), eq(pageable)))
+            when(transactionRepository.searchByClientId(clientId, searchQuery, pageable))
                     .thenReturn(transactionPage);
             when(transactionMapper.toDTOList(transactions)).thenReturn(transactionDTOs);
 
@@ -190,7 +189,7 @@ class TransactionServiceImplTest {
                 .hasSize(2)
                 .extracting(TransactionDTO::getId)
                 .containsExactly(transactionId.toString(), anotherTransaction.getTransactionId().toString());
-            verify(transactionRepository, times(1)).searchByClientId(eq(clientId), eq(searchQuery), eq(pageable));
+            verify(transactionRepository, times(1)).searchByClientId(clientId, searchQuery, pageable);
             verify(transactionMapper, times(1)).toDTOList(transactions);
         }
 
@@ -208,7 +207,7 @@ class TransactionServiceImplTest {
             
             List<TransactionDTO> transactionDTOs = Arrays.asList(testTransactionDTO);
             
-            when(transactionRepository.findByClientClientId(eq(clientId), eq(pageable)))
+            when(transactionRepository.findByClientClientId(clientId, pageable))
                     .thenReturn(transactionPage);
             when(transactionMapper.toDTOList(transactions)).thenReturn(transactionDTOs);
 
@@ -221,7 +220,7 @@ class TransactionServiceImplTest {
                 .hasSize(1)
                 .extracting(TransactionDTO::getId)
                 .containsExactly(transactionId.toString());
-            verify(transactionRepository, times(1)).findByClientClientId(eq(clientId), eq(pageable));
+            verify(transactionRepository, times(1)).findByClientClientId(clientId, pageable);
             verify(transactionMapper, times(1)).toDTOList(transactions);
         }
     }
@@ -265,7 +264,7 @@ class TransactionServiceImplTest {
             
             List<TransactionDTO> transactionDTOs = Arrays.asList(testTransactionDTO, anotherTransactionDTO);
             
-            when(transactionRepository.searchByAgentId(eq(agentId), eq(searchQuery), eq(pageable)))
+            when(transactionRepository.searchByAgentId(agentId, searchQuery, pageable))
                     .thenReturn(transactionPage);
             when(transactionMapper.toDTOList(transactions)).thenReturn(transactionDTOs);
 
@@ -278,7 +277,7 @@ class TransactionServiceImplTest {
                 .hasSize(2)
                 .extracting(TransactionDTO::getId)
                 .containsExactly(transactionId.toString(), anotherTransaction.getTransactionId().toString());
-            verify(transactionRepository, times(1)).searchByAgentId(eq(agentId), eq(searchQuery), eq(pageable));
+            verify(transactionRepository, times(1)).searchByAgentId(agentId, searchQuery, pageable);
             verify(transactionMapper, times(1)).toDTOList(transactions);
         }
 
@@ -296,7 +295,7 @@ class TransactionServiceImplTest {
             
             List<TransactionDTO> transactionDTOs = Arrays.asList(testTransactionDTO);
             
-            when(transactionRepository.findByClientAgentId(eq(agentId), eq(pageable)))
+            when(transactionRepository.findByClientAgentId(agentId, pageable))
                     .thenReturn(transactionPage);
             when(transactionMapper.toDTOList(transactions)).thenReturn(transactionDTOs);
 
@@ -309,7 +308,7 @@ class TransactionServiceImplTest {
                 .hasSize(1)
                 .extracting(TransactionDTO::getId)
                 .containsExactly(transactionId.toString());
-            verify(transactionRepository, times(1)).findByClientAgentId(eq(agentId), eq(pageable));
+            verify(transactionRepository, times(1)).findByClientAgentId(agentId, pageable);
             verify(transactionMapper, times(1)).toDTOList(transactions);
         }
     }
