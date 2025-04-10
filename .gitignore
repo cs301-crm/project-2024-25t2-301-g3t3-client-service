@@ -39,3 +39,4 @@ target
 src/main/resources/application.properties
 *.sh
 .env
+src/main/resources/public.pem
