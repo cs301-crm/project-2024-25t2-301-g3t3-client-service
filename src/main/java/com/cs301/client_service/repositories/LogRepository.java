@@ -38,13 +38,13 @@ public interface LogRepository extends JpaRepository<Log, String> {
     
     @Query(value = "SELECT l FROM Log l WHERE l.clientId = :clientId AND " +
            "(:search IS NULL OR :search = '' OR " +
-           "CAST(l.id as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.attributeName as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.beforeValue as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.afterValue as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.crudType as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.clientId as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.agentId as text) LIKE CONCAT('%', :search, '%'))")
+           "LOWER(CAST(l.id as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.attributeName as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.beforeValue as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.afterValue as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.crudType as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Log> findByClientIdWithSearch(
             @Param("clientId") String clientId,
             @Param("search") String search,
@@ -52,13 +52,13 @@ public interface LogRepository extends JpaRepository<Log, String> {
     
     @Query(value = "SELECT l FROM Log l WHERE l.agentId = :agentId AND " +
            "(:search IS NULL OR :search = '' OR " +
-           "CAST(l.id as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.attributeName as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.beforeValue as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.afterValue as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.crudType as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.clientId as text) LIKE CONCAT('%', :search, '%') OR " +
-           "CAST(l.agentId as text) LIKE CONCAT('%', :search, '%'))")
+           "LOWER(CAST(l.id as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.attributeName as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.beforeValue as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.afterValue as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.crudType as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Log> findByAgentIdWithSearch(
             @Param("agentId") String agentId,
             @Param("search") String search,
