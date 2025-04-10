@@ -1,5 +1,7 @@
 package com.cs301.client_service.utils;
 
+import com.cs301.client_service.exceptions.EntityComparisonException;
+import com.cs301.client_service.exceptions.JsonConversionException;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,11 +22,14 @@ import org.springframework.util.StringUtils;
 
 @Component
 public class LoggingUtils {
-
+    private static final String SYSTEM_USER = "system";
+    private static final String CLIENT_ATTRIBUTE_NAMES = "clientId,firstName,lastName,dateOfBirth,gender,emailAddress,phoneNumber,address,city,state,country,postalCode,nric,agentId";
+    
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtils.class);
     private static ObjectMapper objectMapper;
 
     @Autowired
-    public LoggingUtils(ObjectMapper mapper) {
+    private LoggingUtils(ObjectMapper mapper) {
         objectMapper = mapper;
     }
     
@@ -150,34 +155,9 @@ public class LoggingUtils {
         
         // Generic handling for other entity types
         try {
-            PropertyDescriptor[] propertyDescriptors = BeanUtils.getPropertyDescriptors(oldEntity.getClass());
-            
-            for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
-                String propertyName = propertyDescriptor.getName();
-                
-                // Skip class property and collections
-                if ("class".equals(propertyName) || "accounts".equals(propertyName)) {
-                    continue;
-                }
-                
-                Method readMethod = propertyDescriptor.getReadMethod();
-                if (readMethod != null) {
-                    Object oldValue = readMethod.invoke(oldEntity);
-                    Object newValue = readMethod.invoke(newEntity);
-                    
-                    // Check if values are different
-                    if ((oldValue == null && newValue != null) || 
-                        (oldValue != null && !oldValue.equals(newValue))) {
-                        
-                        String oldValueStr = oldValue != null ? oldValue.toString() : "";
-                        String newValueStr = newValue != null ? newValue.toString() : "";
-                        
-                        changes.put(propertyName, Map.entry(oldValueStr, newValueStr));
-                    }
-                }
-            }
+            compareGenericEntities(oldEntity, newEntity, changes);
         } catch (Exception e) {
-            throw new RuntimeException("Error comparing entities", e);
+            throw new EntityComparisonException("Error comparing entities", e);
         }
         
         return changes;
@@ -192,6 +172,43 @@ public class LoggingUtils {
     private static String toString(Object obj) {
         return obj != null ? obj.toString() : "";
     }
+    
+    /**
+     * Helper method to compare generic entities using reflection
+     * @param oldEntity The entity before changes
+     * @param newEntity The entity after changes
+     * @param changes Map to store the detected changes
+     * @throws Exception If there's an error accessing properties
+     */
+    private static void compareGenericEntities(Object oldEntity, Object newEntity, 
+            Map<String, Map.Entry<String, String>> changes) throws Exception {
+        PropertyDescriptor[] propertyDescriptors = BeanUtils.getPropertyDescriptors(oldEntity.getClass());
+        
+        for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
+            String propertyName = propertyDescriptor.getName();
+            
+            // Skip class property and collections
+            if ("class".equals(propertyName) || "accounts".equals(propertyName)) {
+                continue;
+            }
+            
+            Method readMethod = propertyDescriptor.getReadMethod();
+            if (readMethod != null) {
+                Object oldValue = readMethod.invoke(oldEntity);
+                Object newValue = readMethod.invoke(newEntity);
+                
+                // Check if values are different
+                if ((oldValue == null && newValue != null) || 
+                    (oldValue != null && !oldValue.equals(newValue))) {
+                    
+                    String oldValueStr = oldValue != null ? oldValue.toString() : "";
+                    String newValueStr = newValue != null ? newValue.toString() : "";
+                    
+                    changes.put(propertyName, Map.entry(oldValueStr, newValueStr));
+                }
+            }
+        }
+    }
 
     /**
      * Converts an entity to a JSON string
@@ -204,8 +221,7 @@ public class LoggingUtils {
         }
         
         try {
-            if (entity instanceof Account) {
-                Account account = (Account) entity;
+            if (entity instanceof Account account) {
                 // Create a simplified representation to avoid circular references
                 Map<String, Object> accountMap = new HashMap<>();
                 accountMap.put("accountId", account.getAccountId());
@@ -222,8 +238,7 @@ public class LoggingUtils {
                 }
                 
                 return getObjectMapper().writeValueAsString(accountMap);
-            } else if (entity instanceof Client) {
-                Client client = (Client) entity;
+            } else if (entity instanceof Client client) {
                 // Create a simplified representation to avoid circular references
                 Map<String, Object> clientMap = new HashMap<>();
                 clientMap.put("clientId", client.getClientId());
@@ -250,7 +265,7 @@ public class LoggingUtils {
             // For other types, use the default serialization
             return getObjectMapper().writeValueAsString(entity);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error converting entity to string", e);
+            throw new JsonConversionException("Error converting entity to string", e);
         }
     }
     
@@ -268,7 +283,7 @@ public class LoggingUtils {
         try {
             return getObjectMapper().readValue(json, valueType);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error converting string to object", e);
+            throw new JsonConversionException("Error converting string to object", e);
         }
     }
 
@@ -282,10 +297,10 @@ public class LoggingUtils {
             return null;
         }
         
-        if (entity instanceof Client) {
-            return ((Client) entity).getClientId();
-        } else if (entity instanceof Account) {
-            return ((Account) entity).getClient().getClientId();
+        if (entity instanceof Client client) {
+            return client.getClientId();
+        } else if (entity instanceof Account account) {
+            return account.getClient().getClientId();
         }
         
         return null;
@@ -330,20 +345,11 @@ public class LoggingUtils {
             return "";
         }
         
-        // Try to get the client from the service
         try {
-            // We need to get access to the client service, which requires some refactoring
-            // For now, let's use a placeholder 
-            // In a full implementation, we would inject the ClientService
-            // and use it to look up the client name
-            
-            // This is a placeholder. In real code, you would do:
-            // Client client = clientService.getClient(clientId);
-            // return client.getFirstName() + " " + client.getLastName();
-            
-            return ""; // Will implement actual lookup later
+            // This is a placeholder until ClientService is properly injected
+            return "";
         } catch (Exception e) {
-            LoggerFactory.getLogger(LoggingUtils.class).error("Error getting client name for ID: {}", clientId, e);
+            logger.error("Error getting client name for ID: {}", clientId, e);
             return "";
         }
     }
@@ -382,6 +388,6 @@ public class LoggingUtils {
      * @return Comma-delimited string of attribute names
      */
     public static String getClientAttributeNames() {
-        return "clientId,firstName,lastName,dateOfBirth,gender,emailAddress,phoneNumber,address,city,state,country,postalCode,nric,agentId";
+        return CLIENT_ATTRIBUTE_NAMES;
     }
 }
