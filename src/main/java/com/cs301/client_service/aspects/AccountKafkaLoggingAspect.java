@@ -2,12 +2,10 @@ package com.cs301.client_service.aspects;
 
 import com.cs301.client_service.aspects.base.KafkaLoggingAspect;
 import com.cs301.client_service.models.Account;
-import com.cs301.client_service.repositories.AccountRepository;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,12 +15,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
-    @Autowired
-    private AccountRepository accountRepository;
-
     @Override
     protected String getEntityId(Object entity) {
-        if (entity instanceof Account) {
+        if (entity instanceof Account account) {
             return ((Account) entity).getAccountId();
         }
         return null;
@@ -30,7 +25,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
     @Override
     protected String getClientId(Object entity) {
-        if (entity instanceof Account && ((Account) entity).getClient() != null) {
+        if (entity instanceof Account account && ((Account) entity).getClient() != null) {
             return ((Account) entity).getClient().getClientId();
         }
         return null;
@@ -38,7 +33,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
     @Override
     protected String getClientEmail(Object entity) {
-        if (entity instanceof Account && ((Account) entity).getClient() != null) {
+        if (entity instanceof Account account && ((Account) entity).getClient() != null) {
             return ((Account) entity).getClient().getEmailAddress();
         }
         return null;
@@ -51,7 +46,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
 
     @Override
     protected String getAttributeNames(Object entity) {
-        if (entity instanceof Account) {
+        if (entity instanceof Account account) {
             return "accountId,clientId,accountType,accountStatus,openingDate,initialDeposit,currency,branchId";
         }
         return "";
@@ -59,8 +54,7 @@ public class AccountKafkaLoggingAspect extends KafkaLoggingAspect {
     
     @Override
     protected String getEntityValues(Object entity) {
-        if (entity instanceof Account) {
-            Account account = (Account) entity;
+        if (entity instanceof Account account) {
             return String.format("%s,%s,%s,%s,%s,%s,%s,%s",
                 account.getAccountId(),
                 account.getClient().getClientId(),

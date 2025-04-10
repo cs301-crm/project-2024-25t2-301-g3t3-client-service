@@ -6,7 +6,6 @@ import com.cs301.client_service.models.Log;
 import com.cs301.client_service.repositories.LogRepository;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.annotation.Propagation;
@@ -22,13 +21,12 @@ import java.util.Optional;
 @Order(1) // Database logging should happen first
 public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
     
-    @Autowired
     protected LogRepository logRepository;
     
     /**
      * Get the repository for the entity
      */
-    protected abstract CrudRepository<?, String> getRepository();
+    protected abstract <T> CrudRepository<T, String> getRepository();
 
     /**
      * Get the entity ID from the entity
@@ -68,7 +66,7 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
      * Log after entity creation
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected void logAfterCreation(JoinPoint joinPoint, Object result) {
+    public void logAfterCreation(JoinPoint joinPoint, Object result) {
         try {
             if (result == null) {
                 logger.warn("{} is null for {} creation", getEntityType(), getEntityType().toLowerCase());
@@ -76,7 +74,6 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
             }
             
             String clientId = getClientId(result);
-            String entityId = getEntityId(result);
             
             // Create a log entry
             Log log = createLogEntry(
@@ -99,7 +96,7 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
      * Log after entity retrieval
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected void logAfterRetrieval(JoinPoint joinPoint, Object result) {
+    public void logAfterRetrieval(JoinPoint joinPoint, Object result) {
         try {
             if (result == null) {
                 Object[] args = getArgs(joinPoint);
@@ -109,7 +106,6 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
             }
             
             String clientId = getClientId(result);
-            String entityId = getEntityId(result);
             
             // Create a log entry
             Log log = createLogEntry(
@@ -132,12 +128,11 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
      * Log entity update
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected Object logUpdate(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object logUpdate(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             // Extract method arguments
             Object[] args = joinPoint.getArgs();
             String entityId = (String) args[0];
-            Object newEntityData = args[1];
             
             // Get the existing entity BEFORE the update
             Object oldEntity = getEntityById(entityId);
@@ -211,7 +206,7 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
      * Log before entity deletion
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected void logBeforeDeletion(String entityId) {
+    public void logBeforeDeletion(String entityId) {
         try {
             // Get the entity before deletion
             Object entity = getEntityById(entityId);
@@ -245,10 +240,10 @@ public abstract class DatabaseLoggingAspect extends BaseLoggingAspect {
      */
     @Override
     protected String extractClientId(Object entity) {
-        if (entity instanceof Client) {
-            return ((Client) entity).getClientId();
-        } else if (entity instanceof Account) {
-            return ((Account) entity).getClient().getClientId();
+        if (entity instanceof Client client) {
+            return client.getClientId();
+        } else if (entity instanceof Account account) {
+            return account.getClient().getClientId();
         } else {
             return "UNKNOWN";
         }
