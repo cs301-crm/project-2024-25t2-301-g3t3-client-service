@@ -47,20 +47,24 @@ public class LogController {
     @GetMapping
     public ResponseEntity<List<LogDTO>> getAllLogs(
             Authentication authentication,
+            @RequestParam(required = false) String searchQuery,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, DATE_TIME));
         Page<Log> logsPage;
         
+        // Handle null or empty searchQuery
+        String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
+        
         // Authorization check based on user role
         if (JwtAuthorizationUtil.isAdmin(authentication)) {
             // Admin can see all logs
-            logsPage = logService.getAllLogs(pageable);
+            logsPage = logService.getAllLogsWithSearch(normalizedSearchQuery, pageable);
         } else if (JwtAuthorizationUtil.isAgent(authentication)) {
             // Agent can only see logs related to their agentId
             String agentId = JwtAuthorizationUtil.getAgentId(authentication);
-            logsPage = logService.getLogsByAgentId(agentId, pageable);
+            logsPage = logService.getLogsByAgentId(agentId, normalizedSearchQuery, pageable);
         } else {
             throw new UnauthorizedAccessException("Insufficient permissions to access logs");
         }
@@ -101,39 +105,6 @@ public class LogController {
         
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, DATE_TIME));
         Page<Log> logsPage = logService.getLogsByClientId(clientId, normalizedSearchQuery, pageable);
-        
-        List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
-        
-        return ResponseEntity.ok(logDTOs);
-    }
-
-    /**
-     * Get logs by CRUD type
-     * Requires: authenticated user
-     * - ROLE_AGENT: Only retrieve logs where agentId from JWT subj matches log's agentId
-     * - ROLE_ADMIN: no requirements
-     */
-    @GetMapping("/type/{crudType}")
-    public ResponseEntity<List<LogDTO>> getLogsByCrudType(
-            Authentication authentication,
-            @PathVariable Log.CrudType crudType,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int limit) {
-        
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, DATE_TIME));
-        Page<Log> logsPage;
-        
-        // Authorization check based on user role
-        if (JwtAuthorizationUtil.isAdmin(authentication)) {
-            // Admin can see all logs of this type
-            logsPage = logService.getLogsByCrudType(crudType, pageable);
-        } else if (JwtAuthorizationUtil.isAgent(authentication)) {
-            // Agent can only see logs of this type related to their agentId
-            String agentId = JwtAuthorizationUtil.getAgentId(authentication);
-            logsPage = logService.getLogsByCrudTypeAndAgentId(crudType, agentId, pageable);
-        } else {
-            throw new UnauthorizedAccessException("Insufficient permissions to access logs");
-        }
         
         List<LogDTO> logDTOs = logMapper.toDTOList(logsPage.getContent());
         

@@ -15,6 +15,15 @@ public interface LogService {
     Page<Log> getAllLogs(Pageable pageable);
     
     /**
+     * Get all logs with pagination and search
+     * 
+     * @param searchQuery The search query to filter logs
+     * @param pageable Pagination parameters
+     * @return Page of logs matching the search query
+     */
+    Page<Log> getAllLogsWithSearch(String searchQuery, Pageable pageable);
+    
+    /**
      * Get all logs for a specific agent with pagination
      * 
      * @param agentId The agent ID to filter by
@@ -61,4 +70,4 @@ public interface LogService {
      * @return Page of logs
      */
     Page<Log> getLogsByAgentId(String agentId, String searchQuery, Pageable pageable);
-} 
+}

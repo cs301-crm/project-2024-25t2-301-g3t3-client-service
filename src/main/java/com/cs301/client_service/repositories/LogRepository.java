@@ -63,4 +63,17 @@ public interface LogRepository extends JpaRepository<Log, String> {
             @Param("agentId") String agentId,
             @Param("search") String search,
             Pageable pageable);
+            
+    @Query(value = "SELECT l FROM Log l WHERE " +
+           "(:search IS NULL OR :search = '' OR " +
+           "LOWER(CAST(l.id as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.attributeName as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.beforeValue as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.afterValue as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.crudType as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(l.agentId as text)) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Log> findAllWithSearch(
+            @Param("search") String search,
+            Pageable pageable);
 }
