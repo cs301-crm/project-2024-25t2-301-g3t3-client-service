@@ -109,7 +109,8 @@ public class AccountController {
         }
         // For admin users with no agentId filter
         else {
-            accountsPage = accountService.getAllAccountsPaginated(pageable, type, status);
+            // Use getAccountsWithSearchAndFilters with null agentId to allow searching across all accounts
+            accountsPage = accountService.getAccountsWithSearchAndFilters(null, normalizedSearchQuery, type, status, pageable);
         }
         
         List<AccountDTO> accountDTOs = accountMapper.toDtoList(accountsPage.getContent());

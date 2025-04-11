@@ -59,4 +59,13 @@ public class LogServiceImpl implements LogService {
             return logRepository.findByAgentId(agentId, pageable);
         }
     }
-} 
+    
+    @Override
+    public Page<Log> getAllLogsWithSearch(String searchQuery, Pageable pageable) {
+        if (searchQuery != null && !searchQuery.isEmpty()) {
+            return logRepository.findAllWithSearch(searchQuery, pageable);
+        } else {
+            return logRepository.findAll(pageable);
+        }
+    }
+}

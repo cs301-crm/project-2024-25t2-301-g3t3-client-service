@@ -29,6 +29,20 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    public List<TransactionDTO> getAllTransactions(String searchQuery, int page, int limit) {
+        Pageable pageable = PageRequest.of(page, limit);
+        Page<Transaction> transactions;
+        
+        if (searchQuery != null && !searchQuery.trim().isEmpty()) {
+            transactions = transactionRepository.searchAllTransactions(searchQuery, pageable);
+        } else {
+            transactions = transactionRepository.findAll(pageable);
+        }
+        
+        return transactionMapper.toDTOList(transactions.getContent());
+    }
+    
+    @Override
     public List<TransactionDTO> getTransactionsByClientId(String clientId, String searchQuery, int page, int limit) {
         Pageable pageable = PageRequest.of(page, limit);
         Page<Transaction> transactions;

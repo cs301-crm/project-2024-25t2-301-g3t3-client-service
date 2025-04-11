@@ -8,6 +8,8 @@ import java.util.UUID;
 
 public interface TransactionService {
     
+    List<TransactionDTO> getAllTransactions(String searchQuery, int page, int limit);
+    
     List<TransactionDTO> getTransactionsByClientId(String clientId, String searchQuery, int page, int limit);
     
     List<TransactionDTO> getTransactionsByAgentId(String agentId, String searchQuery, int page, int limit);

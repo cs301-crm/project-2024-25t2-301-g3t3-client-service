@@ -26,6 +26,41 @@ public class TransactionController {
         this.transactionService = transactionService;
         this.clientService = clientService;
     }
+    
+    /**
+     * Get all transactions with pagination and search
+     * Requires: authenticated user
+     * - ROLE_AGENT: Only returns transactions for clients assigned to the authenticated agent
+     * - ROLE_ADMIN: Returns all transactions
+     */
+    @GetMapping
+    public ResponseEntity<List<TransactionDTO>> getAllTransactions(
+            Authentication authentication,
+            @RequestParam(required = false) String searchQuery,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        
+        List<TransactionDTO> transactions;
+        
+        // Handle null or empty searchQuery
+        String normalizedSearchQuery = (searchQuery != null && !searchQuery.trim().isEmpty()) ? searchQuery.trim() : null;
+        
+        // For agents, filter by their agentId
+        if (JwtAuthorizationUtil.isAgent(authentication)) {
+            String agentId = JwtAuthorizationUtil.getAgentId(authentication);
+            transactions = transactionService.getTransactionsByAgentId(agentId, normalizedSearchQuery, page, limit);
+        } 
+        // For admins, return all transactions
+        else if (JwtAuthorizationUtil.isAdmin(authentication)) {
+            transactions = transactionService.getAllTransactions(normalizedSearchQuery, page, limit);
+        }
+        // In case of invalid jwt
+        else {
+            throw new UnauthorizedAccessException("Insufficient permissions to access transaction data");
+        }
+        
+        return ResponseEntity.ok(transactions);
+    }
 
     /**
      * Get transactions by client ID with pagination and search
