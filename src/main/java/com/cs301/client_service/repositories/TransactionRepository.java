@@ -45,4 +45,13 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     List<Transaction> findByAccountAccountId(String accountId);
     
     List<Transaction> findByStatus(TransactionStatus status);
+    
+    @Query("SELECT t FROM Transaction t WHERE " +
+           "(:searchQuery IS NULL OR :searchQuery = '' OR " +
+           "LOWER(CAST(t.client.firstName as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.client.lastName as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.amount as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.status as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR " +
+           "LOWER(CAST(t.description as text)) LIKE LOWER(CONCAT('%', :searchQuery, '%')))")
+    Page<Transaction> searchAllTransactions(@Param("searchQuery") String searchQuery, Pageable pageable);
 }
