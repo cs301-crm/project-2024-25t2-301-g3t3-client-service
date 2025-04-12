@@ -86,6 +86,10 @@ public class Client {
     @Column(nullable = false)
     @Builder.Default
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
+    
+    @Column(nullable = true)
+    @Builder.Default
+    private Boolean deleted = false;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
     @ToString.Exclude
