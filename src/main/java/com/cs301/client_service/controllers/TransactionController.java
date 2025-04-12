@@ -76,8 +76,8 @@ public class TransactionController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
-        // Validate access to this client
-        Client client = clientService.getClient(clientId);
+        // Validate access to this client, including soft-deleted clients
+        Client client = clientService.getClientIncludingSoftDeleted(clientId);
         JwtAuthorizationUtil.validateAgentAccess(authentication, client);
         
         // Handle null or empty searchQuery
