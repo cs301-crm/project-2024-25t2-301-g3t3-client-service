@@ -12,9 +12,16 @@ import java.util.List;
 public interface ClientRepository extends JpaRepository<Client, String> {
     List<Client> findByAgentId(String agentId);
     
+    List<Client> findByAgentIdAndDeletedFalse(String agentId);
+    
+    List<Client> findByAgentIdAndDeletedIsNull(String agentId);
+    
     Page<Client> findByAgentId(String agentId, Pageable pageable);
     
+    Page<Client> findByAgentIdAndDeletedFalseOrDeletedIsNull(String agentId, Pageable pageable);
+    
     @Query(value = "SELECT c FROM Client c WHERE " +
+           "(c.deleted = false OR c.deleted IS NULL) AND " +
            "(:search IS NULL OR :search = '' OR " +
            "LOWER(CAST(c.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(CAST(c.firstName as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
@@ -31,6 +38,7 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     Page<Client> findAllWithSearch(@Param("search") String search, Pageable pageable);
     
     @Query(value = "SELECT c FROM Client c WHERE " +
+           "(c.deleted = false OR c.deleted IS NULL) AND " +
            "(:agentId IS NULL OR c.agentId = :agentId) AND " +
            "(:search IS NULL OR :search = '' OR " +
            "LOWER(CAST(c.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
