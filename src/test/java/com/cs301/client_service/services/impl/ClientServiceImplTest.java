@@ -448,9 +448,10 @@ class ClientServiceImplTest {
     @DisplayName("Verify Client Tests")
     class VerifyClientTests {
         @Test
-        @DisplayName("Should successfully verify a client")
+        @DisplayName("Should successfully verify a client with document uploaded")
         void testVerifyClient_Success() {
             // Given
+            testClient.setVerificationDocumentUploaded(true);
             when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
             when(clientRepository.save(any(Client.class))).thenReturn(testClient);
 
@@ -460,6 +461,30 @@ class ClientServiceImplTest {
             // Then
             verify(clientRepository, times(1)).findById(clientId);
             verify(clientRepository, times(1)).save(any(Client.class));
+            
+            // Verify the client's verification status was updated
+            ArgumentCaptor<Client> clientCaptor = ArgumentCaptor.forClass(Client.class);
+            verify(clientRepository).save(clientCaptor.capture());
+            assertThat(clientCaptor.getValue().getVerificationStatus())
+                .isEqualTo(com.cs301.client_service.constants.VerificationStatus.VERIFIED);
+        }
+        
+        @Test
+        @DisplayName("Should throw VerificationException when verifying client without document uploaded")
+        void testVerifyClient_NoDocumentUploaded() {
+            // Given
+            testClient.setVerificationDocumentUploaded(false);
+            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+
+            // When & Then
+            VerificationException exception = assertThrows(VerificationException.class, () -> {
+                clientService.verifyClient(clientId);
+            });
+            
+            // Verify the exception message
+            assertThat(exception.getMessage()).contains("verification document");
+            verify(clientRepository, times(1)).findById(clientId);
+            verify(clientRepository, never()).save(any(Client.class));
         }
 
         @Test
@@ -472,6 +497,48 @@ class ClientServiceImplTest {
             // When & Then
             ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
                 clientService.verifyClient(nonExistentId);
+            });
+            
+            // Verify the exception message contains the ID
+            assertThat(exception.getMessage()).contains(nonExistentId);
+            verify(clientRepository, times(1)).findById(nonExistentId);
+            verify(clientRepository, never()).save(any(Client.class));
+        }
+    }
+    
+    @Nested
+    @DisplayName("Document Upload Tests")
+    class DocumentUploadTests {
+        @Test
+        @DisplayName("Should successfully mark document as uploaded")
+        void testMarkDocumentUploaded_Success() {
+            // Given
+            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+            when(clientRepository.save(any(Client.class))).thenReturn(testClient);
+
+            // When
+            clientService.markDocumentUploaded(clientId);
+
+            // Then
+            verify(clientRepository, times(1)).findById(clientId);
+            verify(clientRepository, times(1)).save(any(Client.class));
+            
+            // Verify the client's document upload status was updated
+            ArgumentCaptor<Client> clientCaptor = ArgumentCaptor.forClass(Client.class);
+            verify(clientRepository).save(clientCaptor.capture());
+            assertThat(clientCaptor.getValue().getVerificationDocumentUploaded()).isTrue();
+        }
+        
+        @Test
+        @DisplayName("Should throw ClientNotFoundException when marking document uploaded for non-existent client")
+        void testMarkDocumentUploaded_ClientNotFound() {
+            // Given
+            String nonExistentId = "non-existent-id";
+            when(clientRepository.findById(anyString())).thenReturn(Optional.empty());
+
+            // When & Then
+            ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
+                clientService.markDocumentUploaded(nonExistentId);
             });
             
             // Verify the exception message contains the ID
