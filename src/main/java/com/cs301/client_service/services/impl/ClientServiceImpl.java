@@ -53,6 +53,22 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public Client createClient(Client client) {
+        // Check if a soft-deleted client with the same email exists
+        clientRepository.findAll().stream()
+            .filter(c -> c.getEmailAddress().equals(client.getEmailAddress()) && Boolean.TRUE.equals(c.getDeleted()))
+            .findFirst()
+            .ifPresent(c -> {
+                throw new IllegalArgumentException("A client with this email address exists but is deleted");
+            });
+        
+        // Check if a soft-deleted client with the same NRIC exists
+        clientRepository.findAll().stream()
+            .filter(c -> c.getNric().equals(client.getNric()) && Boolean.TRUE.equals(c.getDeleted()))
+            .findFirst()
+            .ifPresent(c -> {
+                throw new IllegalArgumentException("A client with this NRIC exists but is deleted");
+            });
+        
         return clientRepository.save(client);
     }
 
@@ -60,13 +76,16 @@ public class ClientServiceImpl implements ClientService {
     @Transactional(readOnly = true)
     public Client getClient(String clientId) {
         return clientRepository.findById(clientId)
+                .filter(client -> !Boolean.TRUE.equals(client.getDeleted()))
                 .orElseThrow(() -> new ClientNotFoundException(clientId));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Client> getAllClients() {
-        return clientRepository.findAll();
+        return clientRepository.findAll().stream()
+                .filter(client -> !Boolean.TRUE.equals(client.getDeleted()))
+                .toList();
     }
     
     @Override
@@ -81,7 +100,9 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional(readOnly = true)
     public List<Client> getClientsByAgentId(String agentId) {
-        return clientRepository.findByAgentId(agentId);
+        return clientRepository.findByAgentId(agentId).stream()
+                .filter(client -> !Boolean.TRUE.equals(client.getDeleted()))
+                .toList();
     }
     
     @Override
@@ -348,14 +369,38 @@ public class ClientServiceImpl implements ClientService {
         
         try {
             setClientContext(clientId, clientEmail);
-            logger.info("Deleting client");
             
-            sendKafkaMessageSafely(() -> 
-                sendClientDeleteKafkaMessage(clientId, clientEmail),
-                "client deletion"
-            );
-            
-            deleteClientData(clientId);
+            // Check if client is already soft-deleted
+            if (Boolean.TRUE.equals(client.getDeleted())) {
+                // Hard delete if already soft-deleted
+                logger.info("Hard deleting previously soft-deleted client");
+                
+                // Hard delete the client
+                clientRepository.deleteById(clientId);
+            } else {
+                // Soft delete for the first time
+                logger.info("Soft deleting client");
+                
+                sendKafkaMessageSafely(() -> 
+                    sendClientDeleteKafkaMessage(clientId, clientEmail),
+                    "client deletion"
+                );
+                
+                // Soft delete the client
+                client.setDeleted(true);
+                clientRepository.save(client);
+                
+                // Create a log entry for this deletion
+                Log log = Log.builder()
+                    .clientId(clientId)
+                    .crudType(Log.CrudType.DELETE)
+                    .attributeName("deleted")
+                    .agentId(LoggingUtils.getCurrentAgentId())
+                    .dateTime(java.time.LocalDateTime.now())
+                    .build();
+                
+                logRepository.save(log);
+            }
         } finally {
             ClientContextHolder.clear();
         }
@@ -382,15 +427,6 @@ public class ClientServiceImpl implements ClientService {
         }
     }
     
-    private void deleteClientData(String clientId) {
-        logger.info("Deleting associated accounts");
-        accountService.deleteAccountsByClientId(clientId);
-        
-        logger.info("Deleting the client");
-        clientRepository.deleteById(clientId);
-        
-        logger.info("Client deleted");
-    }
     
     private void sendClientUpdateKafkaMessage(String clientId, String clientEmail, Client existingClient, Client updatedClient) {
         logger.info("Sending Kafka message for client update");
@@ -562,10 +598,10 @@ public class ClientServiceImpl implements ClientService {
     
     private void checkForActiveAccounts(String clientId) {
         List<Account> accounts = accountService.getAccountsByClientId(clientId);
-        boolean hasActiveAccounts = accounts.stream()
-                .anyMatch(account -> account.getAccountStatus() == AccountStatus.ACTIVE);
+        boolean hasNonClosedAccounts = accounts.stream()
+                .anyMatch(account -> account.getAccountStatus() != AccountStatus.CLOSED);
 
-        if (hasActiveAccounts) {
+        if (hasNonClosedAccounts) {
             throw new VerificationException("Cannot delete client with active accounts");
         }
     }

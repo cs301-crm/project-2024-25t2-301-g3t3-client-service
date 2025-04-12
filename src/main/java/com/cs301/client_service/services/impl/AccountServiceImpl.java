@@ -92,18 +92,33 @@ public class AccountServiceImpl implements AccountService {
     public void deleteAccount(String accountId) {
         try {
             AccountDeletionContext context = prepareAccountDeletion(accountId);
+            Account account = context.account;
             
-            sendKafkaMessageSafely(() -> 
-                sendAccountDeleteKafkaMessage(
-                    accountId, 
-                    context.clientId, 
-                    context.clientEmail, 
-                    context.accountType
-                ),
-                "account deletion"
-            );
-            
-            accountRepository.deleteById(accountId);
+            // Check if account is already soft-deleted (CLOSED)
+            if (account.getAccountStatus() == AccountStatus.CLOSED) {
+                // Hard delete if already soft-deleted
+                logger.info("Hard deleting previously closed account");
+                
+                // Hard delete the account
+                accountRepository.deleteById(accountId);
+            } else {
+                // Soft delete for the first time
+                logger.info("Soft deleting account (setting status to CLOSED)");
+                
+                sendKafkaMessageSafely(() -> 
+                    sendAccountDeleteKafkaMessage(
+                        accountId, 
+                        context.clientId, 
+                        context.clientEmail, 
+                        context.accountType
+                    ),
+                    "account deletion"
+                );
+                
+                // Soft delete the account by setting status to CLOSED
+                account.setAccountStatus(AccountStatus.CLOSED);
+                accountRepository.save(account);
+            }
         } finally {
             ClientContextHolder.clear();
         }
@@ -120,7 +135,12 @@ public class AccountServiceImpl implements AccountService {
             return;
         }
         
-        accounts.forEach(account -> deleteAccount(account.getAccountId()));
+        accounts.forEach(account -> {
+            // Only soft delete accounts that aren't already CLOSED
+            if (account.getAccountStatus() != AccountStatus.CLOSED) {
+                deleteAccount(account.getAccountId());
+            }
+        });
     }
     
     private Client validateClient(String clientId) {
@@ -139,6 +159,7 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
         
         AccountDeletionContext context = new AccountDeletionContext();
+        context.account = account;
         
         if (account.getClient() != null) {
             Client client = clientRepository.findById(account.getClient().getClientId()).orElse(null);
@@ -191,5 +212,6 @@ public class AccountServiceImpl implements AccountService {
         String clientId = DEFAULT_CLIENT_ID;
         String clientEmail = DEFAULT_CLIENT_EMAIL;
         String accountType = DEFAULT_ACCOUNT_TYPE;
+        Account account;
     }
 }

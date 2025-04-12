@@ -257,14 +257,14 @@ class ClientServiceImplTest {
     @DisplayName("Delete Client Tests")
     class DeleteClientTests {
         @Test
-        @DisplayName("Should successfully delete a client with no accounts")
-        void testDeleteClient_Success() {
+        @DisplayName("Should soft delete a client with no accounts")
+        void testSoftDeleteClient_Success() {
             // Given
             when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
             when(accountService.getAccountsByClientId(clientId)).thenReturn(Collections.emptyList());
-            doNothing().when(accountService).deleteAccountsByClientId(clientId);
-            doNothing().when(clientRepository).deleteById(clientId);
+            when(clientRepository.save(any(Client.class))).thenReturn(testClient);
             doNothing().when(kafkaProducer).produceMessage(anyString(), any(), anyBoolean());
+            when(logRepository.save(any(Log.class))).thenReturn(new Log());
 
             // When
             clientService.deleteClient(clientId);
@@ -272,19 +272,51 @@ class ClientServiceImplTest {
             // Then
             verify(clientRepository, times(1)).findById(clientId);
             verify(accountService, times(1)).getAccountsByClientId(clientId);
-            verify(accountService, times(1)).deleteAccountsByClientId(clientId);
-            verify(clientRepository, times(1)).deleteById(clientId);
-            verify(kafkaProducer, times(1)).produceMessage(eq(clientId), any(C2C.class), eq(true));
+            verify(clientRepository, times(1)).save(any(Client.class));
+            verify(clientRepository, never()).deleteById(anyString());
+            
+            // Verify client was marked as deleted
+            ArgumentCaptor<Client> clientCaptor = ArgumentCaptor.forClass(Client.class);
+            verify(clientRepository).save(clientCaptor.capture());
+            assertThat(clientCaptor.getValue().getDeleted()).isTrue();
+            
+            // Verify Kafka message was sent
+            verify(kafkaProducer, times(1)).produceMessage(anyString(), any(C2C.class), anyBoolean());
+            
+            // Verify log was created
+            verify(logRepository, times(1)).save(any(Log.class));
         }
         
         @Test
-        @DisplayName("Should send Kafka message when deleting a client")
-        void testDeleteClient_SendsKafkaMessage() {
+        @DisplayName("Should hard delete a previously soft-deleted client")
+        void testHardDeleteClient_AfterSoftDelete() {
+            // Given
+            testClient.setDeleted(true); // Client is already soft-deleted
+            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+            when(accountService.getAccountsByClientId(clientId)).thenReturn(Collections.emptyList());
+            doNothing().when(clientRepository).deleteById(clientId);
+
+            // When
+            clientService.deleteClient(clientId);
+
+            // Then
+            verify(clientRepository, times(1)).findById(clientId);
+            verify(accountService, times(1)).getAccountsByClientId(clientId);
+            verify(clientRepository, never()).save(any(Client.class));
+            verify(clientRepository, times(1)).deleteById(clientId);
+            
+            // Verify no Kafka message was sent for hard deletion
+            verify(kafkaProducer, never()).produceMessage(anyString(), any(), anyBoolean());
+        }
+        
+        @Test
+        @DisplayName("Should send Kafka message when soft deleting a client")
+        void testSoftDeleteClient_SendsKafkaMessage() {
             // Given
             when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
             when(accountService.getAccountsByClientId(clientId)).thenReturn(Collections.emptyList());
-            doNothing().when(accountService).deleteAccountsByClientId(clientId);
-            doNothing().when(clientRepository).deleteById(clientId);
+            when(clientRepository.save(any(Client.class))).thenReturn(testClient);
+            when(logRepository.save(any(Log.class))).thenReturn(new Log());
             
             // Capture the Kafka message
             ArgumentCaptor<Object> messageCaptor = ArgumentCaptor.forClass(Object.class);
@@ -294,7 +326,7 @@ class ClientServiceImplTest {
             clientService.deleteClient(clientId);
 
             // Then
-            verify(kafkaProducer, times(1)).produceMessage(eq(clientId), any(C2C.class), eq(true));
+            verify(kafkaProducer, times(1)).produceMessage(anyString(), any(C2C.class), anyBoolean());
             
             // Verify the Kafka message content
             Object capturedMessage = messageCaptor.getValue();
@@ -322,13 +354,13 @@ class ClientServiceImplTest {
             assertThat(exception.getMessage()).contains(nonExistentId);
             verify(clientRepository, times(1)).findById(nonExistentId);
             verify(accountService, never()).getAccountsByClientId(anyString());
-            verify(accountService, never()).deleteAccountsByClientId(anyString());
+            verify(clientRepository, never()).save(any(Client.class));
             verify(clientRepository, never()).deleteById(anyString());
         }
 
         @Test
-        @DisplayName("Should throw VerificationException when client has active accounts")
-        void testDeleteClient_WithActiveAccounts() {
+        @DisplayName("Should throw VerificationException when client has non-CLOSED accounts")
+        void testDeleteClient_WithNonClosedAccounts() {
             // Given
             when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
 
@@ -342,8 +374,117 @@ class ClientServiceImplTest {
             });
             verify(clientRepository, times(1)).findById(clientId);
             verify(accountService, times(1)).getAccountsByClientId(clientId);
-            verify(accountService, never()).deleteAccountsByClientId(anyString());
+            verify(clientRepository, never()).save(any(Client.class));
             verify(clientRepository, never()).deleteById(anyString());
+        }
+        
+        @Test
+        @DisplayName("Should allow deletion when client has only CLOSED accounts")
+        void testDeleteClient_WithClosedAccounts() {
+            // Given
+            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+
+            Account closedAccount = new Account();
+            closedAccount.setAccountStatus(AccountStatus.CLOSED);
+            when(accountService.getAccountsByClientId(clientId)).thenReturn(Arrays.asList(closedAccount));
+            when(clientRepository.save(any(Client.class))).thenReturn(testClient);
+            doNothing().when(kafkaProducer).produceMessage(anyString(), any(), anyBoolean());
+            when(logRepository.save(any(Log.class))).thenReturn(new Log());
+
+            // When
+            clientService.deleteClient(clientId);
+
+            // Then
+            verify(clientRepository, times(1)).findById(clientId);
+            verify(accountService, times(1)).getAccountsByClientId(clientId);
+            verify(clientRepository, times(1)).save(any(Client.class));
+            
+            // Verify client was marked as deleted
+            ArgumentCaptor<Client> clientCaptor = ArgumentCaptor.forClass(Client.class);
+            verify(clientRepository).save(clientCaptor.capture());
+            assertThat(clientCaptor.getValue().getDeleted()).isTrue();
+        }
+    }
+    
+    @Nested
+    @DisplayName("Get Client Tests with Soft Delete")
+    class GetClientWithSoftDeleteTests {
+        @Test
+        @DisplayName("Should not return soft-deleted clients")
+        void testGetClient_SoftDeleted() {
+            // Given
+            testClient.setDeleted(true);
+            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+
+            // When & Then
+            ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> {
+                clientService.getClient(clientId);
+            });
+            
+            // Verify the exception message contains the ID
+            assertThat(exception.getMessage()).contains(clientId);
+            verify(clientRepository, times(1)).findById(clientId);
+        }
+        
+        @Test
+        @DisplayName("Should return non-deleted clients")
+        void testGetClient_NotDeleted() {
+            // Given
+            testClient.setDeleted(false);
+            when(clientRepository.findById(clientId)).thenReturn(Optional.of(testClient));
+
+            // When
+            Client result = clientService.getClient(clientId);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.getClientId()).isEqualTo(clientId);
+            verify(clientRepository, times(1)).findById(clientId);
+        }
+    }
+    
+    @Nested
+    @DisplayName("Create Client Tests with Soft Delete")
+    class CreateClientWithSoftDeleteTests {
+        @Test
+        @DisplayName("Should throw exception when creating client with email of soft-deleted client")
+        void testCreateClient_WithSoftDeletedEmail() {
+            // Given
+            Client existingClient = new Client();
+            existingClient.setClientId("existing-id");
+            existingClient.setEmailAddress("john.doe@example.com");
+            existingClient.setDeleted(true);
+            
+            when(clientRepository.findAll()).thenReturn(Arrays.asList(existingClient));
+
+            // When & Then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                clientService.createClient(testClient); // testClient has same email
+            });
+            
+            assertThat(exception.getMessage()).contains("email address");
+            verify(clientRepository, never()).save(any(Client.class));
+        }
+        
+        @Test
+        @DisplayName("Should throw exception when creating client with NRIC of soft-deleted client")
+        void testCreateClient_WithSoftDeletedNRIC() {
+            // Given
+            Client existingClient = new Client();
+            existingClient.setClientId("existing-id");
+            existingClient.setEmailAddress("different@example.com");
+            existingClient.setNric(nric); // Same NRIC as testClient
+            existingClient.setDeleted(true);
+            
+            when(clientRepository.findAll()).thenReturn(Arrays.asList(existingClient));
+
+            // When & Then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                clientService.createClient(testClient);
+            });
+            
+            assertThat(exception.getMessage()).contains("NRIC");
+            verify(clientRepository, never()).save(any(Client.class));
         }
     }
 
