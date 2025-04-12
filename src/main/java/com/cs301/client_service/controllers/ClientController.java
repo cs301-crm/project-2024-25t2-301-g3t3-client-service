@@ -264,11 +264,47 @@ public class ClientController {
     public ResponseEntity<VerificationResponseDTO> verifyClient(@PathVariable String clientId) {
         try {
             clientService.verifyClient(clientId);
-            return ResponseEntity.ok(VerificationResponseDTO.builder().verified(true).build());
+            return ResponseEntity.ok(VerificationResponseDTO.builder()
+                    .verified(true)
+                    .message("Client successfully verified")
+                    .build());
         } catch (ClientNotFoundException ex) {
             // Return a consistent response format for the not found case
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(VerificationResponseDTO.builder().verified(false).build());
+                    .body(VerificationResponseDTO.builder()
+                            .verified(false)
+                            .message("Client not found")
+                            .build());
+        } catch (VerificationException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(VerificationResponseDTO.builder()
+                            .verified(false)
+                            .message(ex.getMessage())
+                            .build());
+        }
+    }
+
+    @PostMapping("/{clientId}/verifyUpload")
+    public ResponseEntity<VerificationResponseDTO> verifyClientUpload(@PathVariable String clientId) {
+        try {
+            clientService.markDocumentUploaded(clientId);
+            return ResponseEntity.ok(VerificationResponseDTO.builder()
+                    .verified(false)
+                    .message("Document upload marked as completed. Client verification is pending.")
+                    .build());
+        } catch (ClientNotFoundException ex) {
+            // Return a consistent response format for the not found case
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(VerificationResponseDTO.builder()
+                            .verified(false)
+                            .message("Client not found")
+                            .build());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(VerificationResponseDTO.builder()
+                            .verified(false)
+                            .message("Error processing document upload: " + ex.getMessage())
+                            .build());
         }
     }
 }
