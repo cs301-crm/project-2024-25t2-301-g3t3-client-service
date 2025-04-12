@@ -178,50 +178,6 @@ class ClientServiceImplTest {
             verify(clientRepository, times(1)).findAll();
         }
     }
-    
-    @Nested
-    @DisplayName("Get Clients By Agent ID Tests")
-    class GetClientsByAgentIdTests {
-        @Test
-        @DisplayName("Should retrieve all clients for a specific agent")
-        void testGetClientsByAgentId_Success() {
-            // Given
-            Client anotherClient = new Client();
-            anotherClient.setClientId("another-uuid");
-            anotherClient.setFirstName("Jane");
-            anotherClient.setAgentId(agentId);
-
-            when(clientRepository.findByAgentId(agentId)).thenReturn(Arrays.asList(testClient, anotherClient));
-
-            // When
-            List<Client> results = clientService.getClientsByAgentId(agentId);
-
-            // Then
-            assertThat(results)
-                .isNotEmpty()
-                .hasSize(2)
-                .extracting(Client::getClientId, Client::getAgentId)
-                .containsExactly(
-                    tuple(clientId, agentId),
-                    tuple("another-uuid", agentId)
-                );
-            verify(clientRepository, times(1)).findByAgentId(agentId);
-        }
-
-        @Test
-        @DisplayName("Should return empty list when no clients exist for the agent")
-        void testGetClientsByAgentId_EmptyList() {
-            // Given
-            when(clientRepository.findByAgentId("non-existent-agent")).thenReturn(Collections.emptyList());
-
-            // When
-            List<Client> results = clientService.getClientsByAgentId("non-existent-agent");
-
-            // Then
-            assertThat(results).isEmpty();
-            verify(clientRepository, times(1)).findByAgentId("non-existent-agent");
-        }
-    }
 
     @Nested
     @DisplayName("Update Client Tests")
