@@ -20,6 +20,8 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     
     Page<Client> findByAgentIdAndDeletedFalseOrDeletedIsNull(String agentId, Pageable pageable);
     
+    Page<Client> findByDeletedFalseOrDeletedIsNull(Pageable pageable);
+    
     @Query(value = "SELECT c FROM Client c WHERE " +
            "(c.deleted = false OR c.deleted IS NULL) AND " +
            "(:search IS NULL OR :search = '' OR " +

@@ -79,6 +79,13 @@ public class ClientServiceImpl implements ClientService {
                 .filter(client -> !Boolean.TRUE.equals(client.getDeleted()))
                 .orElseThrow(() -> new ClientNotFoundException(clientId));
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Client getClientIncludingSoftDeleted(String clientId) {
+        return clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFoundException(clientId));
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -94,21 +101,19 @@ public class ClientServiceImpl implements ClientService {
         if (search != null && !search.trim().isEmpty()) {
             return clientRepository.findAllWithSearch(search.trim(), pageable);
         }
-        return clientRepository.findAll(pageable);
+        return clientRepository.findByDeletedFalseOrDeletedIsNull(pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Client> getClientsByAgentId(String agentId) {
-        return clientRepository.findByAgentId(agentId).stream()
-                .filter(client -> !Boolean.TRUE.equals(client.getDeleted()))
-                .toList();
+        return clientRepository.findByAgentIdAndDeletedFalse(agentId);
     }
     
     @Override
     @Transactional(readOnly = true)
     public Page<Client> getClientsByAgentIdPaginated(String agentId, Pageable pageable) {
-        return clientRepository.findByAgentId(agentId, pageable);
+        return clientRepository.findByAgentIdAndDeletedFalseOrDeletedIsNull(agentId, pageable);
     }
     
     @Override
@@ -394,7 +399,9 @@ public class ClientServiceImpl implements ClientService {
                 Log log = Log.builder()
                     .clientId(clientId)
                     .crudType(Log.CrudType.DELETE)
-                    .attributeName("deleted")
+                    .attributeName("")
+                    .beforeValue("")
+                    .afterValue("")
                     .agentId(LoggingUtils.getCurrentAgentId())
                     .dateTime(java.time.LocalDateTime.now())
                     .build();

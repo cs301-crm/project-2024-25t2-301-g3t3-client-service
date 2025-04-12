@@ -9,6 +9,7 @@ import java.util.List;
 public interface ClientService {
     Client createClient(Client client);
     Client getClient(String clientId);
+    Client getClientIncludingSoftDeleted(String clientId);
     List<Client> getAllClients();
     Page<Client> getAllClientsPaginated(Pageable pageable, String search);
     List<Client> getClientsByAgentId(String agentId);
