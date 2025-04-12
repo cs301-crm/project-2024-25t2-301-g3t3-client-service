@@ -416,7 +416,20 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public void verifyClient(String clientId) {
         Client client = validateClientOperation(clientId, OPERATION_VERIFY);
-        client.setVerificationStatus(VerificationStatus.VERIFIED);
+        
+        // Only verify if document has been uploaded
+        if (Boolean.TRUE.equals(client.getVerificationDocumentUploaded())) {
+            client.setVerificationStatus(VerificationStatus.VERIFIED);
+            clientRepository.save(client);
+        } else {
+            throw new VerificationException("Cannot verify client without uploaded verification document");
+        }
+    }
+    
+    @Override
+    public void markDocumentUploaded(String clientId) {
+        Client client = validateClientOperation(clientId, OPERATION_VERIFY);
+        client.setVerificationDocumentUploaded(true);
         clientRepository.save(client);
     }
     

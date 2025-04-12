@@ -90,6 +90,10 @@ public class Client {
     @Column(nullable = true)
     @Builder.Default
     private Boolean deleted = false;
+    
+    @Column(nullable = true)
+    @Builder.Default
+    private Boolean verificationDocumentUploaded = false;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
     @ToString.Exclude

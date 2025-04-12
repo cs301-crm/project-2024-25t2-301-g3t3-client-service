@@ -18,4 +18,5 @@ public interface ClientService {
     Client updateClient(String clientId, ClientDTO clientDTO);
     void deleteClient(String clientId);
     void verifyClient(String clientId);
+    void markDocumentUploaded(String clientId);
 }

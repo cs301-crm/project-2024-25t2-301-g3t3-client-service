@@ -38,7 +38,7 @@ public class SecurityConfig {
                 "/swagger*/**",
                 "/actuator/**"
             ).permitAll()
-            .requestMatchers("/api/v1/clients/{clientId}/verify").permitAll() // Allow verify endpoint
+            .requestMatchers("/api/v1/clients/{clientId}/verifyUpload").permitAll() // Allow verify upload endpoint
             .requestMatchers("/api/v1/clients/**").authenticated()
             .requestMatchers("/api/v1/accounts/**").authenticated()
             .requestMatchers("/api/v1/client-logs/**").authenticated()

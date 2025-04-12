@@ -64,4 +64,6 @@ public class ClientDTO {
     private String agentId;
     
     private VerificationStatus verificationStatus;
+    
+    private Boolean verificationDocumentUploaded;
 }

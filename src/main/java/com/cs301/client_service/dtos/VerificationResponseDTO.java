@@ -14,4 +14,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VerificationResponseDTO {
     private boolean verified;
-} 
+    private String message;
+}

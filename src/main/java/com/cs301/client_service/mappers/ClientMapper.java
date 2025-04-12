@@ -43,6 +43,7 @@ public class ClientMapper {
                 .nric(model.getNric())
                 .agentId(model.getAgentId())
                 .verificationStatus(model.getVerificationStatus())
+                .verificationDocumentUploaded(model.getVerificationDocumentUploaded())
                 .build();
     }
 
@@ -74,6 +75,13 @@ public class ClientMapper {
             model.setVerificationStatus(VerificationStatus.PENDING);
         } else {
             model.setVerificationStatus(dto.getVerificationStatus());
+        }
+        
+        // Set verification document uploaded status if provided
+        if (dto.getVerificationDocumentUploaded() != null) {
+            model.setVerificationDocumentUploaded(dto.getVerificationDocumentUploaded());
+        } else {
+            model.setVerificationDocumentUploaded(false);
         }
 
         return model;
@@ -176,6 +184,10 @@ public class ClientMapper {
         
         if (dto.getVerificationStatus() != null) {
             existingClient.setVerificationStatus(dto.getVerificationStatus());
+        }
+        
+        if (dto.getVerificationDocumentUploaded() != null) {
+            existingClient.setVerificationDocumentUploaded(dto.getVerificationDocumentUploaded());
         }
         
         return existingClient;
