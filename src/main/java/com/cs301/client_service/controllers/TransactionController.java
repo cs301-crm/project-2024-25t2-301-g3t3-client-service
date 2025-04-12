@@ -37,7 +37,7 @@ public class TransactionController {
     public ResponseEntity<List<TransactionDTO>> getAllTransactions(
             Authentication authentication,
             @RequestParam(required = false) String searchQuery,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
         List<TransactionDTO> transactions;
@@ -73,7 +73,7 @@ public class TransactionController {
             Authentication authentication,
             @PathVariable String clientId,
             @RequestParam(required = false) String searchQuery,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
         // Validate access to this client
@@ -100,7 +100,7 @@ public class TransactionController {
             Authentication authentication,
             @PathVariable String agentId,
             @RequestParam(required = false) String searchQuery,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
         // For agents, only allow accessing their own transactions
