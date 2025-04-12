@@ -30,7 +30,8 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public List<TransactionDTO> getAllTransactions(String searchQuery, int page, int limit) {
-        Pageable pageable = PageRequest.of(page, limit);
+        // Adjust page number to be 0-based for Spring Data JPA
+        Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Transaction> transactions;
         
         if (searchQuery != null && !searchQuery.trim().isEmpty()) {
@@ -44,7 +45,8 @@ public class TransactionServiceImpl implements TransactionService {
     
     @Override
     public List<TransactionDTO> getTransactionsByClientId(String clientId, String searchQuery, int page, int limit) {
-        Pageable pageable = PageRequest.of(page, limit);
+        // Adjust page number to be 0-based for Spring Data JPA
+        Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Transaction> transactions;
         
         if (searchQuery != null && !searchQuery.trim().isEmpty()) {
@@ -58,7 +60,8 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public List<TransactionDTO> getTransactionsByAgentId(String agentId, String searchQuery, int page, int limit) {
-        Pageable pageable = PageRequest.of(page, limit);
+        // Adjust page number to be 0-based for Spring Data JPA
+        Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Transaction> transactions;
         
         if (searchQuery != null && !searchQuery.trim().isEmpty()) {

@@ -31,6 +31,18 @@ public class TransactionMapper {
 
         Client client = transaction.getClient();
         
+        // For client names, handle different cases:
+        // 1. If client is null (hard deleted), return empty strings
+        // 2. If client is soft deleted, use the actual names
+        // 3. Otherwise, use the actual names
+        String firstName = "";
+        String lastName = "";
+        
+        if (client != null) {
+            firstName = client.getFirstName() != null ? client.getFirstName() : "";
+            lastName = client.getLastName() != null ? client.getLastName() : "";
+        }
+        
         return TransactionDTO.builder()
                 .id(transaction.getTransactionId() != null ? transaction.getTransactionId().toString() : null)
                 .clientId(client != null ? client.getClientId() : null)
@@ -39,8 +51,8 @@ public class TransactionMapper {
                 .status(transaction.getStatus())
                 .date(transaction.getTimestamp())
                 .description(transaction.getDescription())
-                .clientFirstName(client != null ? client.getFirstName() : null)
-                .clientLastName(client != null ? client.getLastName() : null)
+                .clientFirstName(firstName)
+                .clientLastName(lastName)
                 .build();
     }
 
