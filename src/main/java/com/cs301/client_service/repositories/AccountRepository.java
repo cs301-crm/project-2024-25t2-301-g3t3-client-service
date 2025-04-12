@@ -20,6 +20,7 @@ public interface AccountRepository extends JpaRepository<Account, String> {
     Page<Account> findByClientClientId(String clientId, Pageable pageable);
     
     @Query("SELECT a FROM Account a WHERE " +
+           "(a.client.deleted = false OR a.client.deleted IS NULL) AND " +
            "(:type IS NULL OR a.accountType = :type) AND " +
            "(:status IS NULL OR a.accountStatus = :status)")
     Page<Account> findAllWithFilters(
@@ -28,6 +29,7 @@ public interface AccountRepository extends JpaRepository<Account, String> {
             Pageable pageable);
     
     @Query(value = "SELECT a FROM Account a WHERE " +
+           "(a.client.deleted = false OR a.client.deleted IS NULL) AND " +
            "(:agentId IS NULL OR a.client.agentId = :agentId) AND " +
            "(:type IS NULL OR a.accountType = :type) AND " +
            "(:status IS NULL OR a.accountStatus = :status) AND " +
