@@ -7,8 +7,11 @@ import com.cs301.client_service.exceptions.AccountNotFoundException;
 import com.cs301.client_service.exceptions.ClientNotFoundException;
 import com.cs301.client_service.models.Account;
 import com.cs301.client_service.models.Client;
+import com.cs301.client_service.producers.KafkaProducer;
 import com.cs301.client_service.repositories.AccountRepository;
 import com.cs301.client_service.repositories.ClientRepository;
+import com.cs301.shared.protobuf.A2C;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +40,9 @@ class AccountServiceImplTest {
 
     @Mock
     private ClientRepository clientRepository;
+    
+    @Mock
+    private KafkaProducer kafkaProducer;
 
     @InjectMocks
     private AccountServiceImpl accountService;
@@ -181,13 +187,33 @@ class AccountServiceImplTest {
 
         // Then
         assertThat(results).isEmpty();
-        verify(clientRepository, times(1)).existsById(clientId);
-        verify(accountRepository, times(1)).findByClientClientId(clientId);
     }
 
     @Test
-    void testDeleteAccount_Success() {
+    void testDeleteAccount_SetsStatusToClosed() {
         // Given
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(testAccount));
+        when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+        doNothing().when(kafkaProducer).produceA2CMessage(anyString(), any(), anyBoolean());
+
+        // When
+        accountService.deleteAccount(accountId);
+
+        // Then
+        verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, times(1)).save(any(Account.class));
+        verify(accountRepository, never()).deleteById(anyString());
+        
+        // Verify account status was set to CLOSED
+        ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
+        verify(accountRepository).save(accountCaptor.capture());
+        assertThat(accountCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.CLOSED);
+    }
+
+    @Test
+    void testDeleteAccount_HardDeletesClosedAccount() {
+        // Given
+        testAccount.setAccountStatus(AccountStatus.CLOSED);
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(testAccount));
         doNothing().when(accountRepository).deleteById(accountId);
 
@@ -196,6 +222,7 @@ class AccountServiceImplTest {
 
         // Then
         verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, never()).save(any(Account.class));
         verify(accountRepository, times(1)).deleteById(accountId);
     }
 
@@ -217,12 +244,13 @@ class AccountServiceImplTest {
     }
 
     @Test
-    void testDeleteAccountsByClientId_Success() {
+    void testDeleteAccountsByClientId_SetsStatusToClosed() {
         // Given
         when(clientRepository.existsById(clientId)).thenReturn(true);
         when(accountRepository.findByClientClientId(clientId)).thenReturn(Arrays.asList(testAccount));
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(testAccount));
-        doNothing().when(accountRepository).deleteById(accountId);
+        when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+        doNothing().when(kafkaProducer).produceA2CMessage(anyString(), any(), anyBoolean());
 
         // When
         accountService.deleteAccountsByClientId(clientId);
@@ -231,7 +259,30 @@ class AccountServiceImplTest {
         verify(clientRepository, times(1)).existsById(clientId);
         verify(accountRepository, times(1)).findByClientClientId(clientId);
         verify(accountRepository, times(1)).findById(accountId);
-        verify(accountRepository, times(1)).deleteById(accountId);
+        verify(accountRepository, times(1)).save(any(Account.class));
+        verify(accountRepository, never()).deleteById(anyString());
+        
+        // Verify account status was set to CLOSED
+        ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
+        verify(accountRepository).save(accountCaptor.capture());
+        assertThat(accountCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.CLOSED);
+    }
+
+    @Test
+    void testDeleteAccountsByClientId_SkipsAlreadyClosedAccounts() {
+        // Given
+        testAccount.setAccountStatus(AccountStatus.CLOSED);
+        when(clientRepository.existsById(clientId)).thenReturn(true);
+        when(accountRepository.findByClientClientId(clientId)).thenReturn(Arrays.asList(testAccount));
+
+        // When
+        accountService.deleteAccountsByClientId(clientId);
+
+        // Then
+        verify(clientRepository, times(1)).existsById(clientId);
+        verify(accountRepository, times(1)).findByClientClientId(clientId);
+        verify(accountRepository, never()).findById(anyString());
+        verify(accountRepository, never()).save(any(Account.class));
     }
 
     @Test
