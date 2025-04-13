@@ -1,15 +1,13 @@
-name: Build Gradle Project
+name: Commit Stage
 
 on:
   push:
-    branches: [ "main"]
-  pull_request:
-    branches: [ "main"]
+    branches: ["main", "prod"]
+  workflow_dispatch:
 
-env :
+env:
   VERSION: latest
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-  AWS_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
   build:
@@ -20,32 +18,18 @@ jobs:
       security-events: write # Permission to submit security events to GitHub
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Cache Gradle Dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: gradle-${{ runner.os }}-
+          distribution: temurin
+          java-version: 17
+          cache: gradle
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-
-      - name: Generate Protobuf Classes
-        run: ./gradlew generateProto
-
-      - name: Build with Gradle Wrapper
-        run: ./gradlew build --no-daemon
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -53,34 +37,100 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Log into AWS ECR
+      - name: Build with Gradle and run unit tests and int tests
+        run: chmod +x ./gradlew && ./gradlew generateProto && ./gradlew build -x test
+
+      - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
 
+      - name: Set branch-specific variables
+        id: set-vars
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          echo "Branch name is: $BRANCH_NAME"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          
+          # Default tags
+          TAGS="$ECR_REPOSITORY:${{ github.sha }} $ECR_REPOSITORY:${{ env.VERSION }}"
+          
+          # Add prod tag if on prod branch
+          if [[ "$BRANCH_NAME" == "prod" ]]; then
+            echo "Running in production branch"
+            TAGS="$TAGS $ECR_REPOSITORY:prod"
+          else
+            echo "Running in non-production branch"
+          fi
+          
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
       - name: Build, tag and push image
         env:
-          IMAGE_TAG: ${{ github.sha }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY_ID: ${{ github.repository_id }}
+          BRANCH: ${{ steps.set-vars.outputs.branch }}
         run: |
-          docker buildx build --platform linux/amd64 --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ env.VERSION }}  --cache-from=type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:latest --cache-to=type=inline --push .
-      
+          echo "Building from branch: $BRANCH"
+          
+          # Create tag arguments for Docker build
+          TAG_ARGS=""
+          for TAG in ${{ steps.set-vars.outputs.tags }}; do
+            TAG_ARGS="$TAG_ARGS --tag $ECR_REGISTRY/$TAG"
+          done
+          
+          echo "Using tags: $TAG_ARGS"
+          
+          # Build and push with all tags
+          docker buildx build --platform linux/amd64 $TAG_ARGS --cache-from=type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:latest --cache-to=type=inline --push .
+
       - name: Delete image if scan fails
         if: ${{ failure() && steps.scan.outcome == 'failure' }}
         env:
-          IMAGE_TAG: ${{ env.VERSION }}-${{ github.sha }}
+          IMAGE_TAG: ${{ github.sha }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          BRANCH: ${{ steps.set-vars.outputs.branch }}
         run: |
-          # Delete both tags
+          # Delete the SHA tag
           aws ecr batch-delete-image \
             --repository-name $ECR_REPOSITORY \
-            --image-ids imageTag=$IMAGE_TAG imageTag=${{ env.VERSION }} \
+            --image-ids imageTag=$IMAGE_TAG \
             --region ${{ secrets.AWS_REGION }}
+          
+          # Delete the "latest" tag
+          aws ecr batch-delete-image \
+            --repository-name $ECR_REPOSITORY \
+            --image-ids imageTag=${{ env.VERSION }} \
+            --region ${{ secrets.AWS_REGION }}
+          
+          # Delete the "prod" tag if on prod branch
+          if [[ "$BRANCH" == "prod" ]]; then
+            aws ecr batch-delete-image \
+              --repository-name $ECR_REPOSITORY \
+              --image-ids imageTag=prod \
+              --region ${{ secrets.AWS_REGION }}
+          fi
           
           echo "Vulnerability scan failed - images deleted from ECR"
           exit 1
+
+      - name: Code vulnerability scanning
+        uses: anchore/scan-action@v6
+        id: scan # Assign identifier for curr step so that it can be referenced
+        with:
+          path: "${{ github.workspace }}" # Path to checked out repo
+          fail-build: false # Fail if found vulnerabilities
+          severity-cutoff: 'high'
+
+      - name: Upload vulnerability report
+        uses: github/codeql-action/upload-sarif@v3
+        if: success() || failure()
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
+
+      - name: Inspect action SARIF report
+        run: cat ${{ steps.scan.outputs.sarif }}
