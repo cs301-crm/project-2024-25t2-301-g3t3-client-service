@@ -17,7 +17,8 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     List<Client> findByAgentIdAndDeletedIsNull(String agentId);
     
     Page<Client> findByAgentId(String agentId, Pageable pageable);
-    
+
+    @Query("SELECT c FROM Client c WHERE c.agentId = :agentId AND (c.deleted = false OR c.deleted IS NULL)")
     Page<Client> findByAgentIdAndDeletedFalseOrDeletedIsNull(String agentId, Pageable pageable);
     
     Page<Client> findByDeletedFalseOrDeletedIsNull(Pageable pageable);
@@ -41,7 +42,7 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     
     @Query(value = "SELECT c FROM Client c WHERE " +
            "(c.deleted = false OR c.deleted IS NULL) AND " +
-           "(:agentId IS NULL OR c.agentId = :agentId) AND " +
+           "c.agentId = :agentId AND " +
            "(:search IS NULL OR :search = '' OR " +
            "LOWER(CAST(c.clientId as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(CAST(c.firstName as text)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
