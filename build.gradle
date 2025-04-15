@@ -12,6 +12,9 @@ sourceCompatibility = '17'
 
 repositories {
 	mavenCentral()
+	maven {
+		url "https://packages.confluent.io/maven/"
+	}
 }
 
 dependencies {
@@ -23,13 +26,15 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
-	
+
 	// Environment Variables
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
-	
+
 	// Kafka
 	implementation 'org.springframework.kafka:spring-kafka'
 	implementation 'org.springframework.kafka:spring-kafka-test'
+	implementation 'io.confluent:kafka-protobuf-serializer:7.5.1'
+	implementation 'io.confluent:kafka-schema-registry-client:7.5.1'
 	implementation 'com.google.protobuf:protobuf-java:3.25.5'
 	implementation 'com.google.protobuf:protobuf-java-util:3.25.5'
 	// Swagger
@@ -49,10 +54,6 @@ dependencies {
 	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
-
-	// AWS dependencies
-	implementation platform('software.amazon.awssdk:bom:2.31.11') // Use the latest version
-	implementation 'software.amazon.glue:schema-registry-serde:1.1.23'
 }
 
 protobuf {
@@ -74,41 +75,14 @@ test {
 
 // Define the main class for the application
 application {
-    mainClass = 'com.cs301.client_service.ClientServiceApplication'
+	mainClass = 'com.cs301.client_service.ClientServiceApplication'
 }
 
 // Add generated sources to the source sets
 sourceSets {
-    main {
-        java {
-            srcDirs += "$projectDir/build/generated/source/proto/main/java"
-        }
-    }
-}
-
-// Task to run the A2C Kafka consumer
-task runA2CConsumer(type: JavaExec) {
-    description = 'Runs the A2C Kafka consumer'
-    group = 'application'
-    
-    classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.cs301.client_service.kafka.TestA2CConsumer'
-}
-
-// Task to run the C2C Kafka consumer
-task runC2CConsumer(type: JavaExec) {
-    description = 'Runs the C2C Kafka consumer'
-    group = 'application'
-    
-    classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.cs301.client_service.kafka.TestC2CConsumer'
-}
-
-// Task to run the Log Kafka consumer
-task runLogConsumer(type: JavaExec) {
-    description = 'Runs the Log Kafka consumer'
-    group = 'application'
-    
-    classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.cs301.client_service.kafka.TestLogConsumer'
+	main {
+		java {
+			srcDirs += "$projectDir/build/generated/source/proto/main/java"
+		}
+	}
 }
